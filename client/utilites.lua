@@ -147,7 +147,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 				if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
 					local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords) --нужно пройтись 4 раза
 					
-					if compositeId > 0 then
+					if compositeId and compositeId > 0 then
 						Composite[pointCoords.xy].CompositeId[index] = compositeId						
 						Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
 						Composite[pointCoords.xy].PointSpawn = true
@@ -164,7 +164,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 				if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
 					local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords) --нужно пройтись 4 раза
 					
-					if compositeId > 0 then
+					if compositeId and compositeId > 0 then
 						Composite[pointCoords.xy].CompositeId[index] = compositeId						
 						Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
 						Composite[pointCoords.xy].PointSpawn = true
@@ -876,7 +876,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				print("Мы съели: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
 				Eating(HerbID)
 				TriggerServerEvent("RSG:COMPOSITE:Eating", HerbID)
-				if not (HerbID == 11 or HerbID == 26) then
+				if not Config.compositeOptionsEat[HerbID].isPoison then
 					PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 				end
 			end
