@@ -237,12 +237,14 @@ AddEventHandler(
 
 CreateUseableItem = function()
     for k, v in pairs(Config.compositeOptionsEat) do
-        RSGCore.Functions.CreateUseableItem(v.item, function(source, item)
-            local Player = RSGCore.Functions.GetPlayer(source)
-            if Player.Functions.RemoveItem(v.item, 1, item.slot) then
-                TriggerClientEvent("RSG:COMPOSITE:Eating", source, k, v.item) -- передача ключа k - HerbID
-            end
-        end)
+		if v.use == nil or v.use == true then --не создаем для моркови. Она создается в конюшне.
+			RSGCore.Functions.CreateUseableItem(v.item, function(source, item)
+				local Player = RSGCore.Functions.GetPlayer(source)
+				if Player.Functions.RemoveItem(v.item, 1, item.slot) then
+					TriggerClientEvent("RSG:COMPOSITE:Eating", source, k, v.item) -- передача ключа k - HerbID
+				end
+			end)
+		end
     end
 end
 

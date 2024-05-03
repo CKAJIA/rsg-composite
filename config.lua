@@ -349,7 +349,15 @@ Config.compositeOptionsEat = {
 			},
 	[34] = { isPoison = false, item = "consumable_herb_red_sage" },	--Красный шалфей
 	[38] = { isPoison = false, item = "consumable_herb_violet_snowdrop" },	--Фиолетовый подснежник
-	[39] = { isPoison = false, item = "consumable_herb_wild_carrots" },	--Дикая морковь
+	[39] = { --Дикая морковь
+				isPoison = false, 
+				item = "consumable_herb_wild_carrots",
+				use = false,
+				add = {
+					Health = {Min = 15.0, Max = 20.0},
+					Hunger = {Min = 5.0, Max = 15.0},
+				}
+			},
 	[40] = { isPoison = false, item = "consumable_herb_wild_feverfew" },	--Дикий пиретрум
 	[41] = { isPoison = false, item = "consumable_herb_wild_mint" },	--Мята
 	[42] = { isPoison = false, item = "consumable_herb_wintergreen_berry" },	--Гаультерия
