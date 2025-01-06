@@ -17,7 +17,7 @@ function checkRecordAndClear(playerPosition)
 		for key, value in pairs(Composite) do
 			local dist = #(playerPosition.xy - key)
 			if dist >= deleteDistance then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
-				print("Delete point = " .. key)
+				--print("Delete point = " .. key)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entities)
 				Composite[key] = nil
 				CompositePointCol = CompositePointCol - 1
@@ -40,7 +40,7 @@ function checkRecordAndClear(playerPosition)
 					Composite[key].CompositeId = {}
 					Composite[key].VegModifierHandle = {}
 					Composite[key].PointSpawn = false
-					print("Despawn point = " .. key)
+					--print("Despawn point = " .. key)
 				end
 			end
 		end
@@ -187,7 +187,7 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		local f_4 = {}		
 	
 		local HerbID = herbID
-		local compositeHash = GetHashKey(hash)
+		local compositeHash = joaat(hash)
 	
 		local SpawnCol = GetSpawnCol(HerbID)	--Возращает кол-во сколько на точке(т.е. одинарные растения или нет)
 		local Unk1 = GetUnk1(HerbID)			--кроме 52(Тысячелистник) = 4 все остальное 0
@@ -203,7 +203,7 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 			f_4 = func_9(SpawnCol, Unk1)
 		end	
 		serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, F_4 = f_4 }
-		TriggerServerEvent("RSG:COMPOSITE:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
+		TriggerServerEvent("rsg-composite:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
 	elseif Composite[pointCoords.xy].PointSpawn == false then
 		StartCreateComposite(Composite[pointCoords.xy].HerbID, Composite[pointCoords.xy].CompositeHash, pointCoords, pointHeading, Composite[pointCoords.xy].F_4)
 	end
@@ -216,7 +216,7 @@ end
 function CreatePrompts()
 	local str = CreateVarString(10, 'LITERAL_STRING', 'Взять')
 	PickupPrompt = PromptRegisterBegin()
-	PromptSetControlAction(PickupPrompt, GetHashKey("INPUT_LOOT3"))
+	PromptSetControlAction(PickupPrompt, joaat("INPUT_LOOT3"))
 	PromptSetText(PickupPrompt, str)
 	PromptSetEnabled(PickupPrompt, 0)
 	PromptSetVisible(PickupPrompt, 0)
@@ -538,9 +538,9 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 			end
 		end
 		--if HerbID == 44 then
-		--	MAP._0x7563CBCA99253D1A(entity, GetHashKey("BLIP_MP_ROLE_NATURALIST"))
+		--	MAP._0x7563CBCA99253D1A(entity, joaat("BLIP_MP_ROLE_NATURALIST"))
 		--else
-		--	MAP._0x7563CBCA99253D1A(entity, GetHashKey("BLIP_MP_ROLE_COLLECTOR_ILO"))
+		--	MAP._0x7563CBCA99253D1A(entity, joaat("BLIP_MP_ROLE_COLLECTOR_ILO"))
 		--end
 	end
 end
@@ -599,7 +599,7 @@ end)
 Citizen.CreateThread(function()
 	while true do
 		Wait(250)
-		if IsDisabledControlPressed(0, GetHashKey("INPUT_LOOT3")) then
+		if IsDisabledControlPressed(0, joaat("INPUT_LOOT3")) then
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			local scenarios = getLootScenarioHash(playerPosition, 2.0, 256, 5)
 			if scenarios and #scenarios > 0 then
@@ -738,14 +738,14 @@ function addEffectAndCheck(pointCoords, HerbID)
 				if Citizen.InvokeNative(0x45AB66D02B601FA7, player) then
                     -- Eagle Eyes : ON
                     if not is_particle_effect_active then
-                        if not Citizen.InvokeNative(0x65BB72F29138F5D6, GetHashKey("eagle_eye")) then                         -- HasNamedPtfxAssetLoaded
-                            Citizen.InvokeNative(0xF2B2353BBC0D4E8F, GetHashKey("eagle_eye"))                                 -- RequestNamedPtfxAsset
+                        if not Citizen.InvokeNative(0x65BB72F29138F5D6, joaat("eagle_eye")) then                         -- HasNamedPtfxAssetLoaded
+                            Citizen.InvokeNative(0xF2B2353BBC0D4E8F, joaat("eagle_eye"))                                 -- RequestNamedPtfxAsset
                             local counter = 0
-                            while not Citizen.InvokeNative(0x65BB72F29138F5D6, GetHashKey("eagle_eye")) and counter <= 300 do -- while not HasNamedPtfxAssetLoaded
+                            while not Citizen.InvokeNative(0x65BB72F29138F5D6, joaat("eagle_eye")) and counter <= 300 do -- while not HasNamedPtfxAssetLoaded
                                 Citizen.Wait(0)
                             end							
                         end
-                        if Citizen.InvokeNative(0x65BB72F29138F5D6, GetHashKey("eagle_eye")) then -- HasNamedPtfxAssetLoaded
+                        if Citizen.InvokeNative(0x65BB72F29138F5D6, joaat("eagle_eye")) then -- HasNamedPtfxAssetLoaded
                             Citizen.InvokeNative(0xA10DB07FC234DD12, "eagle_eye")                 -- UseParticleFxAsset
                             current_ptfx_handle_id = Citizen.InvokeNative(0x8F90AB32E1944BDE, "eagle_eye_clue", foundEntities[2], 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.55, false, false, false) -- StartNetworkedParticleFxLoopedOnEntity
 							Citizen.InvokeNative(0x239879FC61C610CC, current_ptfx_handle_id, 255.0, 255.0, 0.0, false) --Color
@@ -858,7 +858,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				Config.FullLootedScenarioPoint[pointCoords.xy] = nearestScenario.scenario
 				print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
 				--print("pointCoords.xy = " .. pointCoords.xy)
-				TriggerServerEvent('RSG:COMPOSITE:saveGatheredPoint', pointCoords.xy, nearestScenario.scenario)				
+				TriggerServerEvent('rsg-composite:saveGatheredPoint', pointCoords.xy, nearestScenario.scenario)				
 			end
 			
 			local CompositeAmount = GetHerbPicupAmountID(HerbID)			
@@ -867,7 +867,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			if Pickup then
 				--мы собрали
 				print("Мы собрали: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
-				TriggerServerEvent("RSG:COMPOSITE:Gathered", HerbID, CompositeAmount)
+				TriggerServerEvent("rsg-composite:server:Gathered", HerbID, CompositeAmount)
 				--дополнительная награда
 				GiveAdditionalRewards(HerbID)
 				--PlaySoundFrontend("Core_Fill_Up", "Consumption_Sounds", true, 0)
@@ -875,7 +875,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				--мы съели
 				print("Мы съели: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
 				Eating(HerbID)
-				TriggerServerEvent("RSG:COMPOSITE:Eating", HerbID)
+				TriggerServerEvent("rsg-composite:server:Eating", HerbID)
 				if not Config.compositeOptionsEat[HerbID].isPoison then
 					PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 				end
@@ -898,7 +898,7 @@ function GiveAdditionalRewards(herbID)
 				local amountMin = reward.amountMin
 				local amountMax = reward.amountMax
 				local amount = (amountMin == amountMax) and amountMin or math.random(amountMin, amountMax)
-				TriggerServerEvent("RSG:COMPOSITE:AdditionRewards", item, amount)
+				TriggerServerEvent("rsg-composite:server:AdditionRewards", item, amount)
 			end		
 		end				
 	end
@@ -1001,13 +1001,13 @@ function Eating(herbID)
 	end
 end
 
-RegisterNetEvent("RSG:COMPOSITE:Eating", function(herbID, itemName)
+RegisterNetEvent("rsg-composite:server:Eating", function(herbID, itemName)
     if isBusy then
         return
     else
         isBusy = not isBusy
         sleep = 750
-        SetCurrentPedWeapon(PlayerPedId(), GetHashKey("weapon_unarmed"))
+        SetCurrentPedWeapon(PlayerPedId(), joaat("weapon_unarmed"))
         Citizen.Wait(100)
         if not IsPedOnMount(PlayerPedId()) and not IsPedInAnyVehicle(PlayerPedId()) then
 			local dict = loadAnimDict('mech_inventory@eating@multi_bite@sphere_d8-4_fruit')
@@ -1015,8 +1015,8 @@ RegisterNetEvent("RSG:COMPOSITE:Eating", function(herbID, itemName)
         end
         Wait(sleep)        
         Eating(herbID)
-		TriggerServerEvent("RSG:COMPOSITE:Eating", herbID)
-		TriggerEvent("inventory:client:ItemBox", RSGCore.Shared.Items[itemName], "remove")
+		TriggerServerEvent("rsg-composite:server:Eating", herbID)
+		TriggerEvent("rsg-inventory:client:ItemBox", RSGCore.Shared.Items[itemName], "remove")
 		if not Config.compositeOptionsEat[herbID].isPoison then
 			PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 		end
@@ -1153,15 +1153,15 @@ end
 
 --[[function CheckKnife()
 	if RSGCore.Functions.HasItem('weapon_melee_knife', 1) then			
-		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), GetHashKey('weapon_melee_knife'), 0, false, true)
+		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), joaat('weapon_melee_knife'), 0, false, true)
 	else	
-		TriggerServerEvent("RSG:COMPOSITE:SendMessage", 'Купите нож', 'Вам нужно купить или создать нож!')
+		TriggerServerEvent("rsg-composite:server:SendMessage", 'Купите нож', 'Вам нужно купить или создать нож!')
 	end
 end
 --]]
 function equipKnife(HerbID)
 	if HerbID == 14 or HerbID == 24 or HerbID == 22 or HerbID == 30 or HerbID == 35 then
-		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), GetHashKey('weapon_melee_knife'), 0, false, true)
+		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), joaat('weapon_melee_knife'), 0, false, true)
 		return 12
 	end
 	return 9
@@ -1176,135 +1176,135 @@ end
 
 function GetHerbID(hash)
 
-    if hash == GetHashKey("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF") then
+    if hash == joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF") then
         return 2
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF") then
         return 3
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
         return 4
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
         return 5
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF") then
         return 6
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF") then
         return 7
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
         return 8
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF") then
         return 11
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF") then
         return 12
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF") then
         return 13
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF") then
         return 15
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
         return 16
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF") then
         return 18
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF") then
         return 19
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF") then
         return 20
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_MILKWEED_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_MILKWEED_DEF") then
         return 23
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF") then
         return 26
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_OREGANO_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_OREGANO_DEF") then
         return 27
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
         return 28
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF") then
         return 29
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
         return 31
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
         return 33
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_RED_SAGE_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_RED_SAGE_DEF") then
         return 34
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF") then
         return 37
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF") then
         return 38
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WILD_CARROT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_CARROT_DEF") then
         return 39
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF") then
         return 40
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WILD_MINT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_MINT_DEF") then
         return 41
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
         return 42
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_YARROW_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_YARROW_DEF") then
         return 43
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
         return 1
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
         return 9
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
         return 10
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
         return 14
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
         return 17
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
         return 21
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
         return 22
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
         return 24
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
         return 25
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
         return 30
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
         return 32
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
         return 35
-    elseif hash == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
+    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
         return 36
 		
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF") then
         return 44
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_AGARITA_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_AGARITA_DEF") then
         return 45
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF") then
         return 46
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BITTERWEED_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_BITTERWEED_DEF") then
         return 47
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_BLOODFLOWER_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_BLOODFLOWER_DEF") then
         return 48
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF") then
         return 49
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF") then
         return 50
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
         return 51
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF") then
         return 52
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
         return 53
 	
 	--Яйца
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
         return 54
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
         return 55
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
         return 56
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
         return 57
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
         return 58
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
         return 59
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
         return 60
 		
 	--Лук виноградничный
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF") then
         return 61
 	--Лебеда
-	elseif hash == GetHashKey("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
+	elseif hash == joaat("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
         return 62
 		
     else
@@ -1793,7 +1793,7 @@ end
 
 function NativeDisplayCompositePickuptThisFrame(composite, display)
     Citizen.InvokeNative(0x40D72189F46D2E15, composite, display)
-	--TriggerServerEvent('RSG:COMPOSITE:Gathered')
+	--TriggerServerEvent('rsg-composite:server:Gathered')
 end
 
 function EagleEyeSetCustomEntityTint(entity, red, green, blue)
@@ -1853,127 +1853,127 @@ end
 --[[
 function GetHerbHash(HerbID)
     if HerbID == 2 then
-        return GetHashKey("CONSUMABLE_HERB_GINSENG")
+        return joaat("CONSUMABLE_HERB_GINSENG")
     elseif HerbID == 3 then
-        return GetHashKey("CONSUMABLE_HERB_GINSENG")
+        return joaat("CONSUMABLE_HERB_GINSENG")
     elseif HerbID == 4 then
-        return GetHashKey("CONSUMABLE_HERB_BAY_BOLETE")
+        return joaat("CONSUMABLE_HERB_BAY_BOLETE")
     elseif HerbID == 5 then
-        return GetHashKey("CONSUMABLE_HERB_BLACK_BERRY")
+        return joaat("CONSUMABLE_HERB_BLACK_BERRY")
     elseif HerbID == 6 then
-        return GetHashKey("CONSUMABLE_HERB_CURRANT")
+        return joaat("CONSUMABLE_HERB_CURRANT")
     elseif HerbID == 7 then
-        return GetHashKey("CONSUMABLE_HERB_BURDOCK_ROOT")
+        return joaat("CONSUMABLE_HERB_BURDOCK_ROOT")
     elseif HerbID == 8 then
-        return GetHashKey("CONSUMABLE_HERB_CHANTERELLES")
+        return joaat("CONSUMABLE_HERB_CHANTERELLES")
     elseif HerbID == 11 then
-        return GetHashKey("CONSUMABLE_HERB_COMMON_BULRUSH")
+        return joaat("CONSUMABLE_HERB_COMMON_BULRUSH")
     elseif HerbID == 12 then
-        return GetHashKey("CONSUMABLE_HERB_CREEPING_THYME")
+        return joaat("CONSUMABLE_HERB_CREEPING_THYME")
     elseif HerbID == 13 then
-        return GetHashKey("CONSUMABLE_HERB_SAGE")
+        return joaat("CONSUMABLE_HERB_SAGE")
     elseif HerbID == 15 then
-        return GetHashKey("CONSUMABLE_HERB_ENGLISH_MACE")
+        return joaat("CONSUMABLE_HERB_ENGLISH_MACE")
     elseif HerbID == 16 then
-        return GetHashKey("CONSUMABLE_HERB_EVERGREEN_HUCKLEBERRY")
+        return joaat("CONSUMABLE_HERB_EVERGREEN_HUCKLEBERRY")
     elseif HerbID == 18 then
-        return GetHashKey("CONSUMABLE_HERB_CURRANT")
+        return joaat("CONSUMABLE_HERB_CURRANT")
     elseif HerbID == 19 then
-        return GetHashKey("CONSUMABLE_HERB_SAGE")
+        return joaat("CONSUMABLE_HERB_SAGE")
     elseif HerbID == 20 then
-        return GetHashKey("CONSUMABLE_HERB_INDIAN_TOBACCO")
+        return joaat("CONSUMABLE_HERB_INDIAN_TOBACCO")
     elseif HerbID == 23 then
-        return GetHashKey("CONSUMABLE_HERB_MILKWEED")
+        return joaat("CONSUMABLE_HERB_MILKWEED")
     elseif HerbID == 26 then
-        return GetHashKey("CONSUMABLE_HERB_OLEANDER_SAGE")
+        return joaat("CONSUMABLE_HERB_OLEANDER_SAGE")
     elseif HerbID == 27 then
-        return GetHashKey("CONSUMABLE_HERB_OREGANO")
+        return joaat("CONSUMABLE_HERB_OREGANO")
     elseif HerbID == 28 then
-        return GetHashKey("CONSUMABLE_HERB_PARASOL_MUSHROOM")
+        return joaat("CONSUMABLE_HERB_PARASOL_MUSHROOM")
     elseif HerbID == 29 then
-        return GetHashKey("CONSUMABLE_HERB_PRAIRIE_POPPY")
+        return joaat("CONSUMABLE_HERB_PRAIRIE_POPPY")
     elseif HerbID == 31 then
-        return GetHashKey("CONSUMABLE_HERB_RAMS_HEAD")
+        return joaat("CONSUMABLE_HERB_RAMS_HEAD")
     elseif HerbID == 33 then
-        return GetHashKey("CONSUMABLE_HERB_RED_RASPBERRY")
+        return joaat("CONSUMABLE_HERB_RED_RASPBERRY")
     elseif HerbID == 34 then
-        return GetHashKey("CONSUMABLE_HERB_SAGE")
+        return joaat("CONSUMABLE_HERB_SAGE")
     elseif HerbID == 37 then
-        return GetHashKey("CONSUMABLE_HERB_VANILLA_FLOWER")
+        return joaat("CONSUMABLE_HERB_VANILLA_FLOWER")
     elseif HerbID == 38 then
-        return GetHashKey("CONSUMABLE_HERB_VIOLET_SNOWDROP")
+        return joaat("CONSUMABLE_HERB_VIOLET_SNOWDROP")
     elseif HerbID == 39 then
-        return GetHashKey("CONSUMABLE_HERB_WILD_CARROTS")
+        return joaat("CONSUMABLE_HERB_WILD_CARROTS")
     elseif HerbID == 40 then
-        return GetHashKey("CONSUMABLE_HERB_WILD_FEVERFEW")
+        return joaat("CONSUMABLE_HERB_WILD_FEVERFEW")
     elseif HerbID == 41 then
-        return GetHashKey("CONSUMABLE_HERB_WILD_MINT")
+        return joaat("CONSUMABLE_HERB_WILD_MINT")
     elseif HerbID == 42 then
-        return GetHashKey("CONSUMABLE_HERB_WINTERGREEN_BERRY")
+        return joaat("CONSUMABLE_HERB_WINTERGREEN_BERRY")
     elseif HerbID == 43 then
-        return GetHashKey("CONSUMABLE_HERB_YARROW")
+        return joaat("CONSUMABLE_HERB_YARROW")
     elseif HerbID == 1 then
-        return GetHashKey("PROVISION_RO_FLOWER_ACUNAS_STAR")
+        return joaat("PROVISION_RO_FLOWER_ACUNAS_STAR")
     elseif HerbID == 9 then
-        return GetHashKey("PROVISION_RO_FLOWER_CIGAR")
+        return joaat("PROVISION_RO_FLOWER_CIGAR")
     elseif HerbID == 10 then
-        return GetHashKey("PROVISION_RO_FLOWER_CLAMSHELL")
+        return joaat("PROVISION_RO_FLOWER_CLAMSHELL")
     elseif HerbID == 14 then
-        return GetHashKey("PROVISION_RO_FLOWER_DRAGONS")
+        return joaat("PROVISION_RO_FLOWER_DRAGONS")
     elseif HerbID == 17 then
-        return GetHashKey("PROVISION_RO_FLOWER_GHOST")
+        return joaat("PROVISION_RO_FLOWER_GHOST")
     elseif HerbID == 21 then
-        return GetHashKey("PROVISION_RO_FLOWER_LADY_OF_NIGHT")
+        return joaat("PROVISION_RO_FLOWER_LADY_OF_NIGHT")
     elseif HerbID == 22 then
-        return GetHashKey("PROVISION_RO_FLOWER_LADY_SLIPPER")
+        return joaat("PROVISION_RO_FLOWER_LADY_SLIPPER")
     elseif HerbID == 24 then
-        return GetHashKey("PROVISION_RO_FLOWER_MOCCASIN")
+        return joaat("PROVISION_RO_FLOWER_MOCCASIN")
     elseif HerbID == 25 then
-        return GetHashKey("PROVISION_RO_FLOWER_NIGHT_SCENTED")
+        return joaat("PROVISION_RO_FLOWER_NIGHT_SCENTED")
     elseif HerbID == 30 then
-        return GetHashKey("PROVISION_RO_FLOWER_QUEENS")
+        return joaat("PROVISION_RO_FLOWER_QUEENS")
     elseif HerbID == 32 then
-        return GetHashKey("PROVISION_RO_FLOWER_RAT_TAIL")
+        return joaat("PROVISION_RO_FLOWER_RAT_TAIL")
     elseif HerbID == 35 then
-        return GetHashKey("PROVISION_RO_FLOWER_SPARROWS")
+        return joaat("PROVISION_RO_FLOWER_SPARROWS")
     elseif HerbID == 36 then
-        return GetHashKey("PROVISION_RO_FLOWER_SPIDER")
+        return joaat("PROVISION_RO_FLOWER_SPIDER")
 		
 	elseif HerbID == 44 then
-        return GetHashKey("CONSUMABLE_HERB_HARRIETUM")
+        return joaat("CONSUMABLE_HERB_HARRIETUM")
 	elseif HerbID == 45 then
-        return GetHashKey("PROVISION_WLDFLWR_AGARITA")
+        return joaat("PROVISION_WLDFLWR_AGARITA")
 	elseif HerbID == 46 then
-        return GetHashKey("PROVISION_WLDFLWR_TEXAS_BLUE_BONNET")
+        return joaat("PROVISION_WLDFLWR_TEXAS_BLUE_BONNET")
 	elseif HerbID == 47 then
-        return GetHashKey("PROVISION_WLDFLWR_BITTERWEED")
+        return joaat("PROVISION_WLDFLWR_BITTERWEED")
 	elseif HerbID == 48 then
-        return GetHashKey("PROVISION_WLDFLWR_BLOOD_FLOWER")
+        return joaat("PROVISION_WLDFLWR_BLOOD_FLOWER")
 	elseif HerbID == 49 then
-        return GetHashKey("PROVISION_WLDFLWR_CARDINAL_FLOWER")
+        return joaat("PROVISION_WLDFLWR_CARDINAL_FLOWER")
 	elseif HerbID == 50 then
-        return GetHashKey("PROVISION_WLDFLWR_CHOCOLATE_DAISY")
+        return joaat("PROVISION_WLDFLWR_CHOCOLATE_DAISY")
 	elseif HerbID == 51 then
-        return GetHashKey("PROVISION_WLDFLWR_CREEK_PLUM")
+        return joaat("PROVISION_WLDFLWR_CREEK_PLUM")
 	elseif HerbID == 52 then
-        return GetHashKey("PROVISION_WLDFLWR_WILD_RHUBARB")
+        return joaat("PROVISION_WLDFLWR_WILD_RHUBARB")
 	elseif HerbID == 53 then
-        return GetHashKey("PROVISION_WLDFLWR_WISTERIA")
+        return joaat("PROVISION_WLDFLWR_WISTERIA")
 		
 	elseif HerbID == 54 then
-        return GetHashKey("PROVISION_GATOR_EGG")
+        return joaat("PROVISION_GATOR_EGG")
 	elseif HerbID == 55 then
-        return GetHashKey("PROVISION_GATOR_EGG")
+        return joaat("PROVISION_GATOR_EGG")
 	elseif HerbID == 56 then
-        return GetHashKey("PROVISION_GATOR_EGG")
+        return joaat("PROVISION_GATOR_EGG")
 	elseif HerbID == 57 then
-        return GetHashKey("PROVISION_DUCK_EGG")
+        return joaat("PROVISION_DUCK_EGG")
 	elseif HerbID == 58 then
-        return GetHashKey("PROVISION_GOOSE_EGG")
+        return joaat("PROVISION_GOOSE_EGG")
 	elseif HerbID == 59 then
-        return GetHashKey("PROVISION_LOON_EGG")
+        return joaat("PROVISION_LOON_EGG")
 	elseif HerbID == 60 then
-        return GetHashKey("PROVISION_VULTURE_EGG")
+        return joaat("PROVISION_VULTURE_EGG")
 		
     else
         return 0
@@ -1983,127 +1983,127 @@ end
 --[[
 function GetCompositeHash(HerbID)
 	if HerbID == 2 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF")
     elseif HerbID == 3 then
-        return GetHashKey("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF")
     elseif HerbID == 4 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF")
     elseif HerbID == 5 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF")
     elseif HerbID == 6 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF")
     elseif HerbID == 7 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF")
     elseif HerbID == 8 then
-        return GetHashKey("COMPOSITE_LOOTABLE_CHANTERELLES_DEF")
+        return joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF")
     elseif HerbID == 11 then
-        return GetHashKey("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF")
+        return joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF")
     elseif HerbID == 12 then
-        return GetHashKey("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF")
+        return joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF")
     elseif HerbID == 13 then
-        return GetHashKey("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF")
     elseif HerbID == 15 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF")
     elseif HerbID == 16 then
-        return GetHashKey("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF")
     elseif HerbID == 18 then
-        return GetHashKey("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF")
     elseif HerbID == 19 then
-        return GetHashKey("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF")
     elseif HerbID == 20 then
-        return GetHashKey("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF")
+        return joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF")
     elseif HerbID == 23 then
-        return GetHashKey("COMPOSITE_LOOTABLE_MILKWEED_DEF")
+        return joaat("COMPOSITE_LOOTABLE_MILKWEED_DEF")
     elseif HerbID == 26 then
-        return GetHashKey("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF")
     elseif HerbID == 27 then
-        return GetHashKey("COMPOSITE_LOOTABLE_OREGANO_DEF")
+        return joaat("COMPOSITE_LOOTABLE_OREGANO_DEF")
     elseif HerbID == 28 then
-        return GetHashKey("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF")
+        return joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF")
     elseif HerbID == 29 then
-        return GetHashKey("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF")
     elseif HerbID == 31 then
-        return GetHashKey("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF")
+        return joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF")
     elseif HerbID == 33 then
-        return GetHashKey("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF")
     elseif HerbID == 34 then
-        return GetHashKey("COMPOSITE_LOOTABLE_RED_SAGE_DEF")
+        return joaat("COMPOSITE_LOOTABLE_RED_SAGE_DEF")
     elseif HerbID == 37 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF")
     elseif HerbID == 38 then
-        return GetHashKey("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF")
+        return joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF")
     elseif HerbID == 39 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WILD_CARROT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WILD_CARROT_DEF")
     elseif HerbID == 40 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF")
     elseif HerbID == 41 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WILD_MINT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WILD_MINT_DEF")
     elseif HerbID == 42 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF")
     elseif HerbID == 43 then
-        return GetHashKey("COMPOSITE_LOOTABLE_YARROW_DEF")
+        return joaat("COMPOSITE_LOOTABLE_YARROW_DEF")
     elseif HerbID == 1 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
     elseif HerbID == 9 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
     elseif HerbID == 10 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
     elseif HerbID == 14 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
     elseif HerbID == 17 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
     elseif HerbID == 21 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
     elseif HerbID == 22 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
     elseif HerbID == 24 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
     elseif HerbID == 25 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
     elseif HerbID == 30 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
     elseif HerbID == 32 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
     elseif HerbID == 35 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
     elseif HerbID == 36 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
 		
 	elseif HerbID == 44 then
-        return GetHashKey("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF")
 	elseif HerbID == 45 then
-        return GetHashKey("COMPOSITE_LOOTABLE_AGARITA_DEF")
+        return joaat("COMPOSITE_LOOTABLE_AGARITA_DEF")
 	elseif HerbID == 46 then
-        return GetHashKey("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF")
+        return joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF")
 	elseif HerbID == 47 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BITTERWEED_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BITTERWEED_DEF")
 	elseif HerbID == 48 then
-        return GetHashKey("COMPOSITE_LOOTABLE_BLOOD_FLOWER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_BLOOD_FLOWER_DEF")
 	elseif HerbID == 49 then
-        return GetHashKey("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF")
 	elseif HerbID == 50 then
-        return GetHashKey("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF")
+        return joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF")
 	elseif HerbID == 51 then
-        return GetHashKey("COMPOSITE_LOOTABLE_CREEKPLUM_DEF")
+        return joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF")
 	elseif HerbID == 52 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF")
 	elseif HerbID == 53 then
-        return GetHashKey("COMPOSITE_LOOTABLE_WISTERIA_DEF")
+        return joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF")
 		
 	elseif HerbID == 54 then
-        return GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF")
+        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF")
 	elseif HerbID == 55 then
-        return GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF")
+        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF")
 	elseif HerbID == 56 then
-        return GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF")
+        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF")
 	elseif HerbID == 57 then
-        return GetHashKey("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF")
+        return joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF")
 	elseif HerbID == 58 then
-        return GetHashKey("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF")
+        return joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF")
 	elseif HerbID == 59 then
-        return GetHashKey("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF")
+        return joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF")
 	elseif HerbID == 60 then
-        return GetHashKey("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF")
+        return joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF")
 	
 	
     else
@@ -2112,127 +2112,127 @@ function GetCompositeHash(HerbID)
 end
 
 function GetHerbIDFromLootedHash(lootedComposite)
-	if lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_INTERACTABLE_DEF") then
+	if lootedComposite == joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_INTERACTABLE_DEF") then
         return 2
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_INTERACTABLE_DEF") then
         return 3
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
         return 4
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
         return 5
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BLACK_CURRANT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_INTERACTABLE_DEF") then
         return 6
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BURDOCK_ROOT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_INTERACTABLE_DEF") then
         return 7
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
         return 8
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_COMMON_BULRUSH_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_INTERACTABLE_DEF") then
         return 11
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_CREEPING_THYME_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_INTERACTABLE_DEF") then
         return 12
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_DESERT_SAGE_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_INTERACTABLE_DEF") then
         return 13
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ENGLISH_MACE_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_INTERACTABLE_DEF") then
         return 15
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
         return 16
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_INTERACTABLE_DEF") then
         return 18
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_INTERACTABLE_DEF") then
         return 19
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_INTERACTABLE_DEF") then
         return 20
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_MILKWEED_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_MILKWEED_INTERACTABLE_DEF") then
         return 23
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_OLEANDER_SAGE_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_INTERACTABLE_DEF") then
         return 26
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_OREGANO_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_OREGANO_INTERACTABLE_DEF") then
         return 27
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
         return 28
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_INTERACTABLE_DEF") then
         return 29
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
         return 31
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
         return 33
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_RED_SAGE_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RED_SAGE_INTERACTABLE_DEF") then
         return 34
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_VANILLA_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_INTERACTABLE_DEF") then
         return 37
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_INTERACTABLE_DEF") then
         return 38
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WILD_CARROT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_CARROT_INTERACTABLE_DEF") then
         return 39
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WILD_FEVERFEW_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_INTERACTABLE_DEF") then
         return 40
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WILD_MINT_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_MINT_INTERACTABLE_DEF") then
         return 41
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
         return 42
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_YARROW_INTERACTABLE_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_YARROW_INTERACTABLE_DEF") then
         return 43
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
         return 1
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
         return 9
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
         return 10
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
         return 14
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
         return 17
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
         return 21
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
         return 22
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
         return 24
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
         return 25
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
         return 30
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
         return 32
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
         return 35
-    elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
+    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
         return 36
 	
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_INTERACTABLE_DEF") then
         return 44
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_AGARITA_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_AGARITA_DEF") then
         return 45
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_TEXAS_BONNET_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_INTERACTABLE_DEF") then
         return 46
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BITTERWEED_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BITTERWEED_INTERACTABLE_DEF") then
         return 47
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_BLOODFLOWER_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLOODFLOWER_INTERACTABLE_DEF") then
         return 48
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_INTERACTABLE_DEF") then
         return 49
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_CHOC_DAISY_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_INTERACTABLE_DEF") then
         return 50
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
         return 51
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WILD_RHUBARB_INTERACTABLE_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_INTERACTABLE_DEF") then
         return 52
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
         return 53
 		
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
         return 54
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
         return 55
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
         return 56
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
         return 57
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
         return 58
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
         return 59
-	elseif lootedComposite == GetHashKey("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
+	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
         return 60
 
 		
@@ -2303,31 +2303,31 @@ function GetEntytiFromHerbID(HerbID)
     elseif HerbID == 43 then
         return 918835244
     elseif HerbID == 1 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
     elseif HerbID == 9 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
     elseif HerbID == 10 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
     elseif HerbID == 14 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
     elseif HerbID == 17 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
     elseif HerbID == 21 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
     elseif HerbID == 22 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
     elseif HerbID == 24 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
     elseif HerbID == 25 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
     elseif HerbID == 30 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
     elseif HerbID == 32 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
     elseif HerbID == 35 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
     elseif HerbID == 36 then
-        return GetHashKey("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
+        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
 		
 	elseif HerbID == 44 then
         return -317883624
@@ -2400,8 +2400,8 @@ function ResetComposites()
 	PromptDelete(PickupPrompt)
 end
 
-RegisterNetEvent("RSG:COMPOSITE:GetServerComposite")
-AddEventHandler("RSG:COMPOSITE:GetServerComposite", function(key, compositeTable)
+RegisterNetEvent("rsg-composite:client:GetServerComposite")
+AddEventHandler("rsg-composite:client:GetServerComposite", function(key, compositeTable)
 	StartCreateComposite(compositeTable.HerbID, compositeTable.CompositeHash, compositeTable.PointCoords, compositeTable.PointHeading, compositeTable.F_4)
 end)
 
@@ -2421,8 +2421,8 @@ end)
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
 --------------------------------------------------------------------------------
-RegisterNetEvent('RSG:COMPOSITE:UIFeedPostSampleToastRight')
-AddEventHandler('RSG:COMPOSITE:UIFeedPostSampleToastRight', function(text, dict, icon, text_color, duration, quality, pick)
+RegisterNetEvent('rsg-composite:client:UIFeedPostSampleToastRight')
+AddEventHandler('rsg-composite:client:UIFeedPostSampleToastRight', function(text, dict, icon, text_color, duration, quality, pick)
     local _dict = dict
     local _icon = icon
     if not LoadTexture(_dict) then
@@ -2451,9 +2451,9 @@ function UIFeedPostSampleToastRight(_text, _dict, icon, text_color, duration, qu
     local struct2 = DataView.ArrayBuffer(8*10)
     struct2:SetInt64(8*1,bigInt(text))
     struct2:SetInt64(8*2,bigInt(dict))
-    struct2:SetInt64(8*3,bigInt(GetHashKey(icon)))
+    struct2:SetInt64(8*3,bigInt(joaat(icon)))
 	--struct2:SetInt64(8*4,bigInt(0))
-    struct2:SetInt64(8*5,bigInt(GetHashKey(text_color or "COLOR_WHITE")))
+    struct2:SetInt64(8*5,bigInt(joaat(text_color or "COLOR_WHITE")))
     struct2:SetInt32(8*6,quality or 0)
 
     Citizen.InvokeNative(0xB249EBCB30DD88E0,struct1:Buffer(),struct2:Buffer(),1)

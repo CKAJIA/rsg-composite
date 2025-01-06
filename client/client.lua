@@ -10,7 +10,7 @@ local spawnedScenariopoint = {}
 function CreateScenarioPoints()
 	for index, herb in pairs(deleted_herbs) do
 		if not spawnedScenariopoint[index] then
-			local newScenPoint = CreateScenarioPointHash(GetHashKey(herb.hash), herb.point.x, herb.point.y, herb.point.z, herb.point.w, herb.radius, 0.0, true)--0.0 radius
+			local newScenPoint = CreateScenarioPointHash(joaat(herb.hash), herb.point.x, herb.point.y, herb.point.z, herb.point.w, herb.radius, 0.0, true)--0.0 radius
 			spawnedScenariopoint[index] = newScenPoint
 			if DoesScenarioPointExist(newScenPoint) and IsScenarioPointActive(newScenPoint) then
 				--print("NewScenario = " .. newScenPoint)
@@ -30,8 +30,8 @@ function CreateScenarioPointHash(scenarioHash, x, y, z, heading, radius, p6, boo
 	return Citizen.InvokeNative(0x94B745CE41DB58A1, scenarioHash, x, y, z, heading, radius, p6, bool_p7, Citizen.ResultAsInteger())
 end
 
-RegisterNetEvent('RSG:COMPOSITE:playerCompositeLoaded')
-AddEventHandler('RSG:COMPOSITE:playerCompositeLoaded', function(compositeData)
+RegisterNetEvent('rsg-composite:client:playerCompositeLoaded')
+AddEventHandler('rsg-composite:client:playerCompositeLoaded', function(compositeData)
     -- Обработка полученных данных о координатах
     Config.FullLootedScenarioPoint = compositeData
 	startPointCheck()
@@ -40,7 +40,7 @@ end)
 
 AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()	
 	Wait(1000)
-	TriggerServerEvent('RSG:COMPOSITE:loadPlayerComposite')
+	TriggerServerEvent('rsg-composite:server:loadPlayerComposite')
 	playerSpawn = true
 end)
 
@@ -122,12 +122,12 @@ Citizen.CreateThread(function()
 		if playerSpawn then
 		
 		player = PlayerPedId()
-		if HasAnimEventFired(player, GetHashKey("EFFECTPLANTBLIP")) then
+		if HasAnimEventFired(player, joaat("EFFECTPLANTBLIP")) then
 			eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
 			--print("EFFECTPLANTBLIP")
 		end
 					
-		if HasAnimEventFired(player, GetHashKey("EATPLANT")) then
+		if HasAnimEventFired(player, joaat("EATPLANT")) then
 			Eat = true
 		end
 		
@@ -137,17 +137,17 @@ Citizen.CreateThread(function()
 				local eventAtIndex = GetEventAtIndex(0, i)
 				--player = PlayerPedId()
 				
-				--if eventAtIndex == GetHashKey("EVENT_LOOT_PLANT_START") then
+				--if eventAtIndex == joaat("EVENT_LOOT_PLANT_START") then
 				--	if eventLoot.PlCoords == nil then
 				--		local playerPosition = GetEntityCoords(player)
 				--		eventLoot.PlCoords = playerPosition
 				--	end
-				--elseif eventAtIndex == GetHashKey("EVENT_LOOT") then
-				if eventAtIndex == GetHashKey("EVENT_LOOT") then
+				--elseif eventAtIndex == joaat("EVENT_LOOT") then
+				if eventAtIndex == joaat("EVENT_LOOT") then
 					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
 					local model = view["56"]
 					eventLoot.Model = model
-				elseif eventAtIndex == GetHashKey("EVENT_LOOT_COMPLETE") then
+				elseif eventAtIndex == joaat("EVENT_LOOT_COMPLETE") then
 					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
 					local ped = view["0"] --прилетает наш Ped-Player
 					if eventLoot.Model == nil or eventLoot.Model == 0 then

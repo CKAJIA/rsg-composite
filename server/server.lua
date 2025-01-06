@@ -96,14 +96,14 @@ function GetColorTexture(herbID, pick)
 end
 
 
-RegisterNetEvent("RSG:COMPOSITE:Gathered")
-AddEventHandler("RSG:COMPOSITE:Gathered", function(HerbID, amount)
+RegisterNetEvent("rsg-composite:server:Gathered")
+AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
         local _source = source
 		local Player = RSGCore.Functions.GetPlayer(_source)
 		local item = toItem[HerbID]
         if item ~= nil then			
 			Player.Functions.AddItem(item, amount) --amount количество
-			--TriggerClientEvent("inventory:client:ItemBox", _source, RSGCore.Shared.Items[item], "add")
+			--TriggerClientEvent("rsg-inventory:client:ItemBox", _source, RSGCore.Shared.Items[item], "add")
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
 			
 			local noticeString = ""
@@ -111,7 +111,7 @@ AddEventHandler("RSG:COMPOSITE:Gathered", function(HerbID, amount)
 				noticeString = amount .. "x "
 			end
 			--TriggerClientEvent('rNotify:ShowAdvancedRightNotification', source, RSGCore.Shared.Items[item].label, "pm_collectors_bag_mp" , "provision_wldflwr_wild_rhubarb" , "COLOR_PURE_WHITE", 4000)
-			TriggerClientEvent('RSG:COMPOSITE:UIFeedPostSampleToastRight', source, noticeString .. RSGCore.Shared.Items[item].label, GetDictTexture(HerbID) , item, GetColorTexture(HerbID, true), 2000, 0, 1)
+			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source, noticeString .. RSGCore.Shared.Items[item].label, GetDictTexture(HerbID) , item, GetColorTexture(HerbID, true), 2000, 0, 1)
 			--RSGCore.ShowSuccess(GetCurrentResourceName(), RSGCore.Shared.Items[item].label .. " добавлен(а) в инвентарь!")
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
@@ -119,13 +119,13 @@ AddEventHandler("RSG:COMPOSITE:Gathered", function(HerbID, amount)
     end
 )
 
-RegisterNetEvent("RSG:COMPOSITE:AdditionRewards")
-AddEventHandler("RSG:COMPOSITE:AdditionRewards", function(item, amount)
+RegisterNetEvent("rsg-composite:server:AdditionRewards")
+AddEventHandler("rsg-composite:server:AdditionRewards", function(item, amount)
         local _source = source
 		local Player = RSGCore.Functions.GetPlayer(_source)
         if item and amount then
 			Player.Functions.AddItem(item, amount) --amount количество
-			TriggerClientEvent("inventory:client:ItemBox", _source, RSGCore.Shared.Items[item], "add")
+			TriggerClientEvent("rsg-inventory:client:ItemBox", _source, RSGCore.Shared.Items[item], "add")
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'ERROR', description = 'No items or amount in addReward', type = 'error', duration = 5000 })
@@ -133,12 +133,12 @@ AddEventHandler("RSG:COMPOSITE:AdditionRewards", function(item, amount)
     end
 )
 
-RegisterNetEvent("RSG:COMPOSITE:Eating")
-AddEventHandler("RSG:COMPOSITE:Eating", function(HerbID)
+RegisterNetEvent("rsg-composite:server:Eating")
+AddEventHandler("rsg-composite:server:Eating", function(HerbID)
         local _source = source
 		local item = toItem[HerbID]
         if item ~= nil then
-			TriggerClientEvent('RSG:COMPOSITE:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[item].label, GetDictTexture(HerbID) , item, GetColorTexture(HerbID, false), 2000, 0, 0)
+			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[item].label, GetDictTexture(HerbID) , item, GetColorTexture(HerbID, false), 2000, 0, 0)
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'съели!', type = 'inform', duration = 3000 })
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
@@ -146,31 +146,31 @@ AddEventHandler("RSG:COMPOSITE:Eating", function(HerbID)
     end
 )
 
-RegisterNetEvent("RSG:COMPOSITE:AddToServerPoint")
-AddEventHandler("RSG:COMPOSITE:AddToServerPoint", function(key, CompositePoint)
+RegisterNetEvent("rsg-composite:server:AddToServerPoint")
+AddEventHandler("rsg-composite:server:AddToServerPoint", function(key, CompositePoint)
 		local playerId = source -- Получаем ID игрока, отправившего запрос
 		if ServerComposite[key] == nil then
 			ServerComposite[key] = CompositePoint
 			--print("HerbCoords[1] = " .. CompositePoint.HerbID)
 		end
 		--local compositeTable = ServerComposite[key]
-		TriggerClientEvent("RSG:COMPOSITE:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
     end
 )
 --[[
-RegisterServerEvent("RSG:COMPOSITE:RequestCompositeFromClient")
-AddEventHandler("RSG:COMPOSITE:RequestCompositeFromClient", function(key)
+RegisterServerEvent("rsg-composite:server:RequestCompositeFromClient")
+AddEventHandler("rsg-composite:server:RequestCompositeFromClient", function(key)
     local playerId = source -- Получаем ID игрока, отправившего запрос
 	if ServerComposite[key] then
 		local compositeTable = ServerComposite[key] -- Получаем нужную таблицу
 		--print("HerbID = " .. compositeTable.HerbID)
-		TriggerClientEvent("RSG:COMPOSITE:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
 	end
 end)
 ]]--
 
-RegisterServerEvent("RSG:COMPOSITE:SendMessage")
-AddEventHandler("RSG:COMPOSITE:SendMessage", function(ctitle, cmessage)
+RegisterServerEvent("rsg-composite:server:SendMessage")
+AddEventHandler("rsg-composite:server:SendMessage", function(ctitle, cmessage)
 	local _source = source
     TriggerClientEvent('ox_lib:notify', _source, {title = ctitle, description = cmessage, type = 'inform', duration = 3000 })
 end)
@@ -181,8 +181,8 @@ end)
 
 
 
-RegisterServerEvent('RSG:COMPOSITE:saveGatheredPoint')
-AddEventHandler('RSG:COMPOSITE:saveGatheredPoint', function(pointcoord, scenario)
+RegisterServerEvent('rsg-composite:saveGatheredPoint')
+AddEventHandler('rsg-composite:saveGatheredPoint', function(pointcoord, scenario)
     local _source = source
     local Player = RSGCore.Functions.GetPlayer(_source)
     local citizenid = Player.PlayerData.citizenid	
@@ -197,8 +197,8 @@ AddEventHandler('RSG:COMPOSITE:saveGatheredPoint', function(pointcoord, scenario
 end)
 
 -- get plant
-RegisterServerEvent('RSG:COMPOSITE:loadPlayerComposite')
-AddEventHandler('RSG:COMPOSITE:loadPlayerComposite', function()
+RegisterServerEvent('rsg-composite:server:loadPlayerComposite')
+AddEventHandler('rsg-composite:server:loadPlayerComposite', function()
 	local playerId = source -- Получаем ID игрока, отправившего запрос
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid
@@ -217,7 +217,7 @@ AddEventHandler('RSG:COMPOSITE:loadPlayerComposite', function()
 			end
 		end
 	end
-	TriggerClientEvent('RSG:COMPOSITE:playerCompositeLoaded', playerId, FullLootedScenarioPoint)
+	TriggerClientEvent('rsg-composite:client:playerCompositeLoaded', playerId, FullLootedScenarioPoint)
 	print("Composite Data for " .. citizenid .. " uploaded successfully")
 end)
 
@@ -229,7 +229,7 @@ AddEventHandler(
     "RSGCore:Client:OnPlayerLoaded",
     function(source, user_id, isFirstSpawn)
         if isFirstSpawn then
-            TriggerClientEvent("RSG:COMPOSITE:SetPopSuppressed", source, popSuppressed)
+            TriggerClientEvent("rsg-composite:SetPopSuppressed", source, popSuppressed)
         end
     end
 )
@@ -241,7 +241,7 @@ CreateUseableItem = function()
 			RSGCore.Functions.CreateUseableItem(v.item, function(source, item)
 				local Player = RSGCore.Functions.GetPlayer(source)
 				if Player.Functions.RemoveItem(v.item, 1, item.slot) then
-					TriggerClientEvent("RSG:COMPOSITE:Eating", source, k, v.item) -- передача ключа k - HerbID
+					TriggerClientEvent("rsg-composite:server:Eating", source, k, v.item) -- передача ключа k - HerbID
 				end
 			end)
 		end

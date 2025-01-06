@@ -165,7 +165,7 @@ Config.compositeOptionsReward = {
 	[17] = {  },	--Орхидея-призрак
 	[18] = {  },	--Смородина золотистая
 	[19] = {  },	--Шалфей покрывальцевый
-	[20] = { addReward = {{chance = 25, item = 'indtobaccoseed', amountMin = 1, amountMax = 3}} },	--Индейский табак
+	[20] = { addReward = {{chance = 25, item = 'bread', amountMin = 1, amountMax = 3}} },	--Индейский табак
 	[21] = {  },	--Орхидея "Леди ночи"
 	[22] = {  },	--Орхидея "Венерин башмачок"
 	[23] = {  },	--Молочай
@@ -178,13 +178,13 @@ Config.compositeOptionsReward = {
 	[30] = {  },	--Орхидея "Голубая Леди"
 	[31] = {  },	--Гриб-баран
 	[32] = {  },	--Орхидея "Крысиный хвост"
-	[33] = { addReward = {{chance = 50, item = 'stick', amountMin = 1, amountMax = 1}} },	--Малина
+	[33] = { addReward = {{chance = 50, item = 'water', amountMin = 1, amountMax = 1}} },	--Малина
 	[34] = {  },	--Красный шалфей
 	[35] = {  },	--Орхидея "Воробьиный башмачок"
 	[36] = {  },	--Паучья орхидея
 	[37] = {  },	--Цветок ванили
 	[38] = {  },	--Фиолетовый подснежник
-	[39] = { addReward = {{chance = 25, item = 'carrotseed', amountMin = 1, amountMax = 3}} },	--Дикая морковь
+	[39] = { addReward = {{chance = 25, item = 'stew', amountMin = 1, amountMax = 3}} },	--Дикая морковь
 	[40] = {  },	--Дикий пиретрум
 	[41] = {  },	--Мята
 	[42] = {  },	--Гаультерия
