@@ -154,6 +154,8 @@ Citizen.CreateThread(function()
 						local entity = view["2"]						
 						local model = GetEntityModel(entity)
 						eventLoot.Model = model
+						
+						--print("model " .. model)
 					end
 					--для яиц
 					if eventLoot.PlCoords == nil then
@@ -259,7 +261,7 @@ end)
 
 AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
-		if LocalPlayer.state['isLoggedIn'] then
+		if LocalPlayer.state.isLoggedIn then
 			TriggerEvent('RSGCore:Client:OnPlayerLoaded')
 			--print("onResourceStart")
 		end

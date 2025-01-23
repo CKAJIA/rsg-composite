@@ -883,8 +883,6 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 		else
 			print("ERROR: No compositeIndex")
 		end
-	else
-		print("ERROR: No scenario")
 	end
 end
 
