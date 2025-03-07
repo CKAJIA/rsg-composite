@@ -137,23 +137,32 @@ Citizen.CreateThread(function()
 				local eventAtIndex = GetEventAtIndex(0, i)
 				--player = PlayerPedId()
 				
-				--if eventAtIndex == joaat("EVENT_LOOT_PLANT_START") then
-				--	if eventLoot.PlCoords == nil then
-				--		local playerPosition = GetEntityCoords(player)
-				--		eventLoot.PlCoords = playerPosition
-				--	end
-				--elseif eventAtIndex == joaat("EVENT_LOOT") then
-				if eventAtIndex == joaat("EVENT_LOOT") then
+				if eventAtIndex == joaat("EVENT_LOOT_PLANT_START") then
+					--if eventLoot.PlCoords == nil then
+					--	local playerPosition = GetEntityCoords(player)
+					--	eventLoot.PlCoords = playerPosition
+					--end
+					--print(json.encode(GetHerbCompositeNumEntities3(10.0)))
+					
+				elseif eventAtIndex == joaat("EVENT_LOOT") then
+				--if eventAtIndex == joaat("EVENT_LOOT") then
 					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
 					local model = view["56"]
+					--print("unk1 = " .. tostring(view["48"]))
+					--print("unk2 = " .. tostring(view["50"]))
+					--print("unk3 = " .. tostring(view["52"]))
+					--print("unk4 = " .. tostring(view["54"]))
+					--print("unk5 = " .. tostring(view["56"]))
+					--print("unk6 = " .. tostring(view["58"]))
 					eventLoot.Model = model
 				elseif eventAtIndex == joaat("EVENT_LOOT_COMPLETE") then
 					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
 					local ped = view["0"] --прилетает наш Ped-Player
+					print("lootCompliteEnt = " .. tostring(view["2"]))
 					if eventLoot.Model == nil or eventLoot.Model == 0 then
 						local entity = view["2"]						
 						local model = GetEntityModel(entity)
-						eventLoot.Model = model
+						eventLoot.Model = model						
 						
 						--print("model " .. model)
 					end

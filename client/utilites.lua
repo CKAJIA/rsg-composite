@@ -399,10 +399,19 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, f_4,
             compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
 			--print("compositeId " .. compositeId)
 			--print("CompositeCoords " .. herbCoords[index])
+			
+			
+			
+			
 			--если глючный composite - то удаляем его сразу
 			if compositeId == -1 then
 				NativeDeleteComposite(compositeId)
-			else			
+			else
+				--получаем все Entities у композита чтобы потом его можно было найти в ивенте
+				--print(compositeId, json.encode(GetHerbCompositeNumEntities(compositeId, 25)))
+				
+				--print(compositeId, json.encode(GetHerbCompositeNumEntities2(herbCoords[index], 10.0)))
+			
 				if HerbID == 61 then --для лука
 					vegModifierHandle = AddVegModifierSphere(herbCoords[index], 0.35, 2, 314, 0)
 				end
@@ -829,7 +838,7 @@ function IsControlAlwaysPressed(inputGroup, control)
 end
 
 function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
-	local nearestScenario, pointCoords, HerbID = GetNearestScenario(scenarios, PickUpPlayerCoords, Model)
+	local nearestScenario, pointCoords, HerbID = GetNearestScenario(PickUpPlayerCoords, Model)
 	if nearestScenario then
 		local compositeCoords = Composite[pointCoords.xy].HerbCoords			
 		local compositeIndex = GetNearestCopmositeIdIndex(PickUpPlayerCoords, compositeCoords)
@@ -863,7 +872,6 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			
 			local CompositeAmount = GetHerbPicupAmountID(HerbID)			
 			
-			NativeDisplayCompositePickuptThisFrame(nearestCompositeId, 1)
 			if Pickup then
 				--мы собрали
 				print("Мы собрали: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
@@ -879,6 +887,12 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				if not Config.compositeOptionsEat[HerbID].isPoison then
 					PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 				end
+			end
+			local herbType = GetHerbType(HerbID)
+			if herbType ~= 0 then
+				TelemetryHerbPicked(herbType)
+				CompendiumHerbPicked(herbType, PickUpPlayerCoords)
+				--print("add in telemetry and compendium " .. tostring(herbType))
 			end
 		else
 			print("ERROR: No compositeIndex")
@@ -913,12 +927,13 @@ function GetNearestCopmositeIdIndex(PickUpPlayerCoords, herbCoords)
 			compositeIndex = index
 		end
 	end
+	print("compositeIndex = " .. compositeIndex)
 	return compositeIndex
 end
 
-function GetNearestScenario(scenarios, PickUpPlayerCoords, Model)
-	local radius = 25.0 --не меньше 15 потому что яйца тогда при отходе не берутся.
-	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 2048, 100)	
+function GetNearestScenario(PickUpPlayerCoords, Model)
+	local radius = 30.0 --не меньше 15 потому что яйца тогда при отходе не берутся.
+	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 2048, 200)	
 	local minDistance = radius
 	local scenar = nil
 	local pCoords = nil
@@ -1807,10 +1822,146 @@ function RemoveVegModifierSphere(vegModifierHandle, p1)
 end
 
 function NativeDeleteComposite(compositeId)
-    Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, 0)
+    Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, false)
 end
 
+function GetHerbType(HerbID)
+	if HerbID == 2 then
+		return `HERB_ALASKAN_GINSENG`
+	elseif HerbID == 3 then
+        return `HERB_AMERICAN_GINSENG`
+	elseif HerbID == 4 then
+        return `HERB_BAY_BOLETE`
+	elseif HerbID == 5 then
+        return `HERB_BLACK_BERRY`
+	elseif HerbID == 6 then
+        return `HERB_BLACK_CURRANT`
+	elseif HerbID == 7 then
+        return `HERB_BURDOCK_ROOT`
+	elseif HerbID == 8 then
+        return `HERB_CHANTERELLES`
+	elseif HerbID == 11 then
+        return `HERB_COMMON_BULRUSH`
+	elseif HerbID == 12 then
+        return `HERB_CREEPING_THYME`
+	elseif HerbID == 13 then
+        return `HERB_DESERT_SAGE`
+	elseif HerbID == 15 then
+        return `HERB_ENGLISH_MACE`
+	elseif HerbID == 16 then
+        return `HERB_EVERGREEN_HUCKLEBERRY`
+	elseif HerbID == 18 then
+        return `HERB_GOLDEN_CURRANT`
+	elseif HerbID == 19 then
+        return `HERB_HUMMINGBIRD_SAGE`
+	elseif HerbID == 20 then
+        return `HERB_INDIAN_TOBACCO`
+	elseif HerbID == 23 then
+        return `HERB_MILKWEED`
+	elseif HerbID == 26 then
+        return `HERB_OLEANDER_SAGE`
+	elseif HerbID == 27 then
+        return `HERB_OREGANO`
+	elseif HerbID == 28 then
+        return `HERB_PARASOL_MUSHROOM`
+	elseif HerbID == 29 then
+        return `HERB_PRAIRIE_POPPY`
+	elseif HerbID == 31 then
+        return `HERB_RAMS_HEAD`
+	elseif HerbID == 33 then
+        return `HERB_RED_RASPBERRY`
+	elseif HerbID == 34 then
+        return `HERB_RED_SAGE`
+	elseif HerbID == 37 then
+        return `HERB_VANILLA_FLOWER`
+	elseif HerbID == 38 then
+        return `HERB_VIOLET_SNOWDROP`
+	elseif HerbID == 39 then
+        return `HERB_WILD_CARROTS`
+	elseif HerbID == 40 then
+        return `HERB_WILD_FEVERFEW`
+	elseif HerbID == 41 then
+        return `HERB_WILD_MINT`
+	elseif HerbID == 42 then
+        return `HERB_WINTERGREEN_BERRY`
+	elseif HerbID == 43 then
+        return `HERB_YARROW`
+	elseif HerbID == 1 then
+        return `HERB_ACUNAS_STAR_ORCHID`
+	elseif HerbID == 9 then
+        return `HERB_CIGAR_ORCHID`
+	elseif HerbID == 10 then
+        return `HERB_CLAMSHELL_ORCHID`
+	elseif HerbID == 14 then
+        return `HERB_DRAGONS_MOUTH_ORCHID`
+	elseif HerbID == 17 then
+        return `HERB_GHOST_ORCHID`
+	elseif HerbID == 21 then
+        return `HERB_LADY_OF_NIGHT_ORCHID`
+	elseif HerbID == 22 then
+        return `HERB_LADY_SLIPPER_ORCHID`
+	elseif HerbID == 24 then
+        return `HERB_MOCCASIN_FLOWER_ORCHID`
+	elseif HerbID == 25 then
+        return `HERB_NIGHT_SCENTED_ORCHID`
+	elseif HerbID == 30 then
+        return `HERB_QUEENS_ORCHID`
+	elseif HerbID == 32 then
+        return `HERB_RAT_TAIL_ORCHID`
+	elseif HerbID == 35 then
+        return `HERB_SPARROWS_EGG_ORCHID`
+	elseif HerbID == 36 then
+        return `HERB_SPIDER_ORCHID`
+	elseif HerbID == 44 then
+        return `HERB_HARRIETUM_OFFICINALIS`
+	elseif HerbID == 45 then
+        return `HERB_WILD_FLWR_AGARITA`
+	elseif HerbID == 46 then
+        return `HERB_WILD_FLWR_BLUE_BONNET`
+	elseif HerbID == 47 then
+        return `HERB_WILD_FLWR_BITTERWEED`
+	elseif HerbID == 48 then
+        return `HERB_WILD_FLWR_BLOOD_FLOWER`
+	elseif HerbID == 49 then
+        return `HERB_WILD_FLWR_CARDINAL_FLOWER`
+	elseif HerbID == 50 then
+        return `HERB_WILD_FLWR_CHOCOLATE_DAISY`
+	elseif HerbID == 51 then
+        return `HERB_WILD_FLWR_CREEK_PLUM`
+	elseif HerbID == 52 then
+        return `HERB_WILD_FLWR_RHUBARB`
+	elseif HerbID == 53 then
+        return `HERB_WILD_FLWR_WISTERIA`
 
+	
+	--[[
+	--Яйца
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
+        return 54
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
+        return 55
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
+        return 56
+	elseif hash == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
+        return 57
+	elseif hash == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
+        return 58
+	elseif hash == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
+        return 59
+	elseif hash == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
+        return 60
+		
+	--Лук виноградничный
+	elseif hash == joaat("COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF") then
+        return 61
+	--Лебеда
+	elseif hash == joaat("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
+        return 62
+	--]]	
+    else
+        return 0
+    end
+end
 
 --[[
 function createAnimScene(entity)
@@ -2415,6 +2566,79 @@ AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
 	ResetComposites()
 end)
+
+
+function GetHerbCompositeNumEntities(compositeId, searchNum)
+	local struct = DataView.ArrayBuffer(256)
+	struct:SetInt32(0, searchNum) --указываем какое количество ENTITIES искать (5 хватает)
+	local Entities = {}
+	local Entities2 = {}
+	local num = Citizen.InvokeNative(0x96C6ED22FB742C3E, compositeId, struct:Buffer(), Citizen.ResultAsInteger())
+	if num > 0 then
+        -- Перебираем каждый блок данных с шагом 8
+        for i = 1, num + 1 do
+            local value = struct:GetInt32(i * 8)  -- Индексы: 8, 16, 24, 32, 40
+            if value > 0 then
+				table.insert(Entities, value)
+				local attEnt = GetEntityAttachedTo(value)
+				if attEnt then
+					table.insert(Entities2, attEnt)
+				end
+            end
+        end
+    end
+	print("Entities2 = " .. json.encode(Entities2))
+	return Entities
+end
+
+function GetHerbCompositeNumEntities2(herbCoords, scale)
+	local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
+	--local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale)
+	local itemSet = CreateItemset(1)
+	local itemCount = Citizen.InvokeNative(0x886171A12F400B89, volumeArea, itemSet, 3) -- Get volume items into itemset
+	local foundEntities = {}
+	--print("itemCount" .. itemCount)
+	if itemCount then	
+		for index = 0, itemCount do
+			local entity = GetIndexedItemInItemset(index, itemSet)
+			--print("entity = " .. entity)
+			--if Citizen.InvokeNative(0x0A27A546A375FDEF, entity) then--IS_ENTITY_AN_OBJECT
+				table.insert(foundEntities, entity) -- Добавляем найденный Entity в таблицу
+			--end
+		end	
+	end
+	Citizen.InvokeNative(0x20A4BF0E09BEE146, itemSet) -- Empty Item Set
+	DestroyItemset(itemSet)
+	if Citizen.InvokeNative(0x92A78D0BEDB332A3, volumeArea) then --BOOL DOES_VOLUME_EXIST ( Volume volume )  //0x92A78D0BEDB332A3
+		Citizen.InvokeNative(0x43F867EF5C463A53, volumeArea) --void _DELETE_VOLUME ( Volume volume )  //0x43F867EF5C463A53
+	end
+	return foundEntities
+end
+
+function GetHerbCompositeNumEntities3(scale)
+	local playerPosition = GetEntityCoords(PlayerPedId())
+	local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, playerPosition.x, playerPosition.y, playerPosition.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
+	--local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale)
+	local itemSet = CreateItemset(1)
+	local itemCount = Citizen.InvokeNative(0x886171A12F400B89, volumeArea, itemSet, 3) -- Get volume items into itemset
+	local foundEntities = {}
+	--print("itemCount" .. itemCount)
+	if itemCount then	
+		for index = 0, itemCount do
+			local entity = GetIndexedItemInItemset(index, itemSet)
+			--print("entity = " .. entity)
+			--if Citizen.InvokeNative(0x0A27A546A375FDEF, entity) then--IS_ENTITY_AN_OBJECT
+				table.insert(foundEntities, entity) -- Добавляем найденный Entity в таблицу
+			--end
+		end	
+	end
+	Citizen.InvokeNative(0x20A4BF0E09BEE146, itemSet) -- Empty Item Set
+	DestroyItemset(itemSet)
+	if Citizen.InvokeNative(0x92A78D0BEDB332A3, volumeArea) then --BOOL DOES_VOLUME_EXIST ( Volume volume )  //0x92A78D0BEDB332A3
+		Citizen.InvokeNative(0x43F867EF5C463A53, volumeArea) --void _DELETE_VOLUME ( Volume volume )  //0x43F867EF5C463A53
+	end
+	return foundEntities
+end
 
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
