@@ -779,11 +779,23 @@ function IsControlAlwaysPressed(inputGroup, control)
 end
 
 function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
-	local pickupCoords = PickUpPlayerCoords
+	local lPickUp = Pickup
+	local lModel = Model
+	local lPickupCoords = PickUpPlayerCoords
+	local tries = 0
+	local nearestScenario, pointCoords, HerbID, compositeIndex
 	if IsPedOnMount(PlayerPedId()) then
-		pickupCoords = GetEntityCoords(PlayerPedId())
+		lPickupCoords = GetEntityCoords(PlayerPedId())
 	end	
-	local nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(pickupCoords, Model)
+	--local nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(lPickupCoords, Model)
+	--Иногда на лошади не сразу прилетает - поэтому повторим попытку через 500мс.
+	while nearestScenario == nil and tries < 2 do
+		nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(lPickupCoords, Model)
+		if nearestScenario == nil then
+			Wait(500)
+			tries = tries + 1
+		end
+	end
 	if nearestScenario then
 		if compositeIndex ~= nil then
 			local nearestCompositeId = Composite[pointCoords.xy].CompositeId[compositeIndex]
@@ -802,7 +814,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			
 			local CompositeAmount = GetHerbPicupAmountID(HerbID)			
 			
-			if Pickup then
+			if lPickUp then
 				--мы собрали
 				if Config.Debug then
 					print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. compositeIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. CompositeAmount)
@@ -825,7 +837,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			local herbType = GetHerbType(HerbID)
 			if herbType ~= 0 then
 				TelemetryHerbPicked(herbType)
-				CompendiumHerbPicked(herbType, pickupCoords)
+				CompendiumHerbPicked(herbType, lPickupCoords)
 				--print("add in telemetry and compendium " .. tostring(herbType))
 			end
 			Composite[pointCoords.xy].HerbCoords[compositeIndex] = vector3(0.0, 0.0, 0.0)
@@ -873,7 +885,7 @@ function GetNearestScenario(PickUpPlayerCoords, Model)
 	local herbId = nil
 	local compositeIndex = nil
 	local lootHerb = GetHerbIDFromLootedModel(Model)
-	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 2048, 200)
+	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 4096, 200)
 	local pickupCoords = PickUpPlayerCoords
 	
 	-- Теперь пройдемся по всем точкам и найдем ближайшую в момент взятия
