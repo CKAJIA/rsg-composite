@@ -20,7 +20,7 @@ function CreateScenarioPoints()
 			end
 		end
 	end
-	Citizen.Wait(500)
+	Wait(500)
 end
 
 --BOOL DOES_SCENARIO_POINT_EXIST ( int scenario )  //0x841475AC96E794D1
@@ -59,7 +59,6 @@ function getLootScenarioHash(playerPosition, spawnRadius, buffSize, foundNums)
 			local scenario = DataStruct:GetInt32(8 * i)			
 			local hash = GetScenarioPointType(scenario)
 			local herbsScenarioPoint = Config.composite_scenario[hash] or nil
-
 			if DoesScenarioPointExist(scenario) then
 				if herbsScenarioPoint and herbsScenarioPoint ~= nil  and IsScenarioPointActive(scenario) then					
 					table.insert(scenarios, {scenario = scenario, herbsScenarioPoint = herbsScenarioPoint})
@@ -76,14 +75,14 @@ function startPointCheck()
 	Citizen.InvokeNative(0x3D0EAC6385DD6100)
 	CreateScenarioPoints()
 	while not playerSpawn do -- Ждать, пока игрок не заспавнится
-		Citizen.Wait(1000)		
+		Wait(1000)		
 		return
 	end
 
-	Citizen.CreateThread(function()
-	Citizen.Wait(0)
+	CreateThread(function()
+	Wait(0)
 		while playerSpawn do
-			Citizen.Wait(2000) -- 2 sec
+			Wait(2000) -- 2 sec
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
@@ -116,91 +115,63 @@ end
 local Eat = false
 local player = 0
 
-Citizen.CreateThread(function()
+CreateThread(function()
 	while true do
-		Citizen.Wait(0)
+		Wait(0)
 		if playerSpawn then
-		
+
 		player = PlayerPedId()
-		if HasAnimEventFired(player, joaat("EFFECTPLANTBLIP")) then
+		if HasAnimEventFired(player, joaat("EFFECTPLANTBLIP")) or HasAnimEventFired(player, joaat("ADDEGG")) then
 			eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
 			--print("EFFECTPLANTBLIP")
 		end
-					
+
 		if HasAnimEventFired(player, joaat("EATPLANT")) then
 			Eat = true
 		end
-		
+
 		local size = GetNumberOfEvents(0)
-		if size > 0 then				
+		if size > 0 then
 			for i = 0, size - 1 do
 				local eventAtIndex = GetEventAtIndex(0, i)
-				--player = PlayerPedId()
-				
-				if eventAtIndex == joaat("EVENT_LOOT_PLANT_START") then
-					--if eventLoot.PlCoords == nil then
-					--	local playerPosition = GetEntityCoords(player)
-					--	eventLoot.PlCoords = playerPosition
-					--end
-					--print(json.encode(GetHerbCompositeNumEntities3(10.0)))
-					
+
+				if eventAtIndex == joaat("EVENT_CALCULATE_LOOT") then
+					if eventLoot.PlCoords == nil then
+						eventLoot.PlCoords = GetEntityCoords(player)
+					end
+					--print("<----EVENT_CALCULATE_LOOT---->")
 				elseif eventAtIndex == joaat("EVENT_LOOT") then
-				--if eventAtIndex == joaat("EVENT_LOOT") then
-					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
-					local model = view["56"]
-					--print("unk1 = " .. tostring(view["48"]))
-					--print("unk2 = " .. tostring(view["50"]))
-					--print("unk3 = " .. tostring(view["52"]))
-					--print("unk4 = " .. tostring(view["54"]))
-					--print("unk5 = " .. tostring(view["56"]))
-					--print("unk6 = " .. tostring(view["58"]))
-					eventLoot.Model = model
+					if IsPedOnMount(PlayerPedId()) == false then
+						local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
+						eventLoot.Model = view["56"]
+					end
+					--print("<----EVENT_LOOT---->")
 				elseif eventAtIndex == joaat("EVENT_LOOT_COMPLETE") then
 					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
 					local ped = view["0"] --прилетает наш Ped-Player
-					print("lootCompliteEnt = " .. tostring(view["2"]))
 					if eventLoot.Model == nil or eventLoot.Model == 0 then
-						local entity = view["2"]						
-						local model = GetEntityModel(entity)
-						eventLoot.Model = model						
-						
-						--print("model " .. model)
+						eventLoot.Model = GetEntityModel(view["2"])
+						--print("EVENT_LOOT_COMPLETE MODEL = " .. tostring(eventLoot.Model))
 					end
-					--для яиц
+					--для яиц и для сбора на лошади
 					if eventLoot.PlCoords == nil then
-						local playerPosition = GetEntityCoords(player)
-						eventLoot.PlCoords = playerPosition
+						eventLoot.PlCoords = GetEntityCoords(player)
 					end
-					
-					if ped ~= player then
-						eventLoot = {PlCoords = nil, Model = nil}
-					else
-						PickupOrEaten()--стоит здесь потому что срабатывает последним
-					end					
+
+					if ped == player then
+						if eventLoot.PlCoords and eventLoot.Model ~= 0 then
+							FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, not Eat)
+						end
+					end
+					Eat = false
+					eventLoot = {PlCoords = nil, Model = nil}
+					--print("<----EVENT_LOOT_COMPLETE---->")
 				end
 			end
 		end
 		end
 	end
 end)
-
-
-function PickupOrEaten()
-	if eventLoot.PlCoords and eventLoot.Model ~= 0 then
-		if Eat == false then--Pickup
-			FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, true)
-			--print("Мы собрали " .. eventLoot.Model)
-			Eat = false
-		else --Eat
-			FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, false)
-			--print("Мы съели " .. eventLoot.Model)
-			Eat = false
-		end
-	else
-		--print("ERROR: no model or Coords or it's not composite")
-	end
-	eventLoot = {PlCoords = nil, Model = nil}
-end
 
 function DumpTable(tbl)
     for k, v in pairs(tbl) do
@@ -235,9 +206,9 @@ function IsScenarioPointActive(scenario)
     return Citizen.InvokeNative(0x0CC36D4156006509, scenario)
 end
 
-function SetScenarioPointActive(scenario, toggle)
-    return Citizen.InvokeNative(0xEEE4829304F93EEE, scenario, toggle)
-end
+--function SetScenarioPointActive(scenario, toggle)
+--    return Citizen.InvokeNative(0xEEE4829304F93EEE, scenario, toggle)
+--end
 
 
 

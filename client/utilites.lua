@@ -18,7 +18,7 @@ function checkRecordAndClear(playerPosition)
 			local dist = #(playerPosition.xy - key)
 			if dist >= deleteDistance then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
 				--print("Delete point = " .. key)
-				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entities)
+				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key] = nil
 				CompositePointCol = CompositePointCol - 1
 				if CompositePointCol < 1 then
@@ -30,7 +30,7 @@ function checkRecordAndClear(playerPosition)
 		for key, value in pairs(Composite) do
 			local dist = #(playerPosition.xy - key)--150.0
 			if dist >= 150.0 and value.PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entities)
+				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				--проверяем если еще есть composite на точке не собранные- то просто обнуляем
 				--а если все собрали то удаляем запись
 				if not HerbsRemains(key) then
@@ -52,7 +52,7 @@ function checkRecordAndClear(playerPosition)
 			local dist = #(playerPosition.xy - key)
 			if dist >= 625.0 then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
 				print("Emergency Despawn point = " .. key)
-				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entities)
+				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key].CompositeId = {}
 				Composite[key].VegModifierHandle = {}
 				Composite[key].PointSpawn = false
@@ -65,7 +65,7 @@ function StartEmergencyClear()
 	for key, value in pairs(Composite) do
 		if Composite[key].PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
 			--print("Emergency Despawn point = " .. key)
-			deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entities)
+			deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 			Composite[key].CompositeId = {}
 			Composite[key].VegModifierHandle = {}
 			Composite[key].PointSpawn = false
@@ -78,18 +78,15 @@ function DeactivatePoints(scenario)
 end
 
 function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, sF_4)
-	local haveRecord = false
-	local HerbID = 0
-	local compositeHash = 0	
-	local f_4 = {}
-	local herbCoords = {}
-	local SpawnCol = 0
 	local playerPosition = GetEntityCoords(PlayerPedId())
 	local pointCoords = sPointCoords
+	local herbCoords = {}
+	local SpawnCol = 0
+	local haveRecord = false
+	local HerbID = sHerbID
+	local compositeHash = sCompositeHash	
+	local f_4 = sF_4	
 	
-	--if Config.FullLootedScenarioPoint[sPointCoords.xy] then
-	--	print("555 = " .. Config.FullLootedScenarioPoint[sPointCoords.xy])
-	--end
 	--если уже точка собрана ничего не делаем.
 	if Config.FullLootedScenarioPoint[pointCoords.xy] then
 		local scenario = Config.FullLootedScenarioPoint[pointCoords.xy]
@@ -97,18 +94,13 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 			SetScenarioPointActive(scenario, false)
 		end
 		return
-	end
-	
-	
-	if not Composite[pointCoords.xy] then		
-        Composite[pointCoords.xy] = { HerbID = 0, CompositeHash = 0, PointSpawn = false, CompositeId = {}, F_4 = {}, HerbCoords = {}, VegModifierHandle = {}, AttachEntities = nil, Entities = {}, GroupPromt = nil, PickupPrompt = nil }
-		HerbID = sHerbID
-		compositeHash = sCompositeHash
-		f_4 = sF_4
-		
-		Composite[pointCoords.xy].HerbID = HerbID
-		Composite[pointCoords.xy].CompositeHash = compositeHash
-		Composite[pointCoords.xy].F_4 = f_4
+	end	
+	-- Если записи нет в Composite, создаем её
+	if not Composite[pointCoords.xy] then
+		Composite[pointCoords.xy] = {HerbID = HerbID, CompositeHash = compositeHash,
+            PointSpawn = false, CompositeId = {}, F_4 = f_4, HerbCoords = {},
+            VegModifierHandle = {}, AttachEntity = nil, Entitys = {}, GroupPromt = nil, PickupPrompt = nil
+        }
 		haveRecord = false
 	else
 		HerbID = Composite[pointCoords.xy].HerbID
@@ -119,64 +111,53 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 			herbCoords = Composite[pointCoords.xy].HerbCoords
 		else--Это для одиночных
 			herbCoords[1] = pointCoords
-		end			
+		end
 		haveRecord = true
 	end
 	
-	checkRecordAndClear(playerPosition)
-		
+	checkRecordAndClear(playerPosition)		
+	-- Проверка на день и ночь
 	local HOURS = GetClockHours()
-	--print("HOURS=" .. HOURS)
-	if HOURS < 22 and HOURS >= 5 then
-		if Config.compositeOptionsSpawn[HerbID].isNightHerb then
-			--deleteComposite(&Var0);--если день то надо удалять эти растения
-			--очищаем запись потому что сейчас день и не надо создавать ночные растения
-			Composite[pointCoords.xy] = nil
-			return
-		end
+	if HOURS < 22 and HOURS >= 5 and Config.compositeOptionsSpawn[HerbID].isNightHerb then
+		--deleteComposite(&Var0);--если день то надо удалять эти растения
+		--очищаем запись потому что сейчас день и не надо создавать ночные растения
+		Composite[pointCoords.xy] = nil
+		return
 	end
 	
 	if HerbID ~= 0 and haveRecord == false then
 		--print("First Spawn")
+		-- Первоначальный спаун растений
 		herbCoords = CreateHerbsCoords(pointCoords, f_4)
 		Composite[pointCoords.xy].HerbCoords = herbCoords
-
-		for index = 1, 4 do
-			if f_4[index] ~= nil then
-				RequestAndWaitForComposite(compositeHash)
-				if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
-					local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords) --нужно пройтись 4 раза
-					
-					if compositeId and compositeId > 0 then
-						Composite[pointCoords.xy].CompositeId[index] = compositeId						
-						Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
-						Composite[pointCoords.xy].PointSpawn = true
-					end
-				end
-			end
-		end
-		CompositePointCol = CompositePointCol + 1
+		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
 	elseif HerbID ~= 0 and haveRecord == true and Composite[pointCoords.xy].PointSpawn == false then--проверка на заспавненую точку
 		--print("Second Spawn")
-		for index = 1, 4 do
-			if f_4[index] ~= nil then
-				RequestAndWaitForComposite(compositeHash)
-				if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
-					local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords) --нужно пройтись 4 раза
-					
-					if compositeId and compositeId > 0 then
-						Composite[pointCoords.xy].CompositeId[index] = compositeId						
-						Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
-						Composite[pointCoords.xy].PointSpawn = true
-					end
-				end
-			end
-		end
+		-- Повторный спаун
+		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
 	elseif HerbID == 0 or HerbID == nil then
 		print("No HerbID for " .. compositeHash)
 	elseif HerbHash == 0 then
 		return
 	end	
+end
+
+-- Функция для спауна композитных объектов
+function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+    for index = 1, 4 do
+        if f_4[index] ~= nil then
+            RequestAndWaitForComposite(compositeHash)
+            if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
+                local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+                if compositeId and compositeId > 0 then
+                    Composite[pointCoords.xy].CompositeId[index] = compositeId
+                    Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
+                    Composite[pointCoords.xy].PointSpawn = true
+                end
+            end
+        end
+    end
+    CompositePointCol = CompositePointCol + 1
 end
 
 
@@ -397,17 +378,12 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, f_4,
 				Heading = correctHeading(Heading + (index * math.random(0.0, 90.0)))
 			end
             compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
-			--print("compositeId " .. compositeId)
-			--print("CompositeCoords " .. herbCoords[index])
-			
-			
-			
-			
+
 			--если глючный composite - то удаляем его сразу
 			if compositeId == -1 then
 				NativeDeleteComposite(compositeId)
 			else
-				--получаем все Entities у композита чтобы потом его можно было найти в ивенте
+				--получаем все Entitys у композита чтобы потом его можно было найти в ивенте
 				--print(compositeId, json.encode(GetHerbCompositeNumEntities(compositeId, 25)))
 				
 				--print(compositeId, json.encode(GetHerbCompositeNumEntities2(herbCoords[index], 10.0)))
@@ -429,28 +405,24 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, f_4,
 					end
 					RareHerbs(HerbID, herbCoords[index], pointCoords)
 					SPHerbs(HerbID, herbCoords[index], pointCoords)
-				end	
+				end
+				spawnCompositeNum = spawnCompositeNum + 1
+				return compositeId, vegModifierHandle
 			end
         end
     end
 	
-	if compositeId > 0 then
-		spawnCompositeNum = spawnCompositeNum + 1
-		return compositeId, vegModifierHandle
-	elseif compositeId == -1 then
-		--запускаем экстренную очистку
-		StartEmergencyClear()
-	end
-	
-		
+	--if compositeId > 0 then
+	--	spawnCompositeNum = spawnCompositeNum + 1
+	--	return compositeId, vegModifierHandle
+	--elseif compositeId == -1 then
+	--	--запускаем экстренную очистку
+	--	StartEmergencyClear()
 	--end
 end
 
 --Despawn herbs
-function deleteComposite(coordsXY, compositeId, vegModifierHandle, entities)
-	--if soundId and soundId ~= 0 then
-	--	stopSound(soundId)--убираем звук
-	--end
+function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 	--при удалении composite останавливаем звук и удаляем запись.
 	--нет composite - нет звука	
 	DeleteSound(coordsXY)	
@@ -472,8 +444,8 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entities)
 		end
 	end
 	--удаляем композит от орхидей
-	--потому что они состоят из 2 entities
-	for _, value in ipairs(entities) do
+	--потому что они состоят из 2 entity
+	for _, value in ipairs(entitys) do
 		if value then
 			--SetEntityAsMissionEntity(value, true, true)
 			SetEntityAsNoLongerNeeded(value)
@@ -481,7 +453,7 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entities)
 		end
 	end
 	DeletePromptAndGroup(coordsXY)
-	Composite[coordsXY].Entities = {}
+	Composite[coordsXY].Entitys = {}
 end
 
 function DeleteSound(coordsXY)
@@ -496,8 +468,8 @@ end
 function DeleteEffect(coordsXY)
 	for key, value in pairs(PlayEffectCoords) do		
 		if key == coordsXY and PlayEffectCoords[key] then
-			if Citizen.InvokeNative(0x9DD5AFF561E88F2A, PlayEffectCoords[key]) then    -- DoesParticleFxLoopedExist
-                Citizen.InvokeNative(0x459598F579C98929, PlayEffectCoords[key], false) -- RemoveParticleFx
+			if DoesParticleFxLoopedExist(PlayEffectCoords[key]) then    -- DoesParticleFxLoopedExist
+                RemoveParticleFx(PlayEffectCoords[key], false) -- RemoveParticleFx
 				PlayEffectCoords[key] = nil
             end
 		end
@@ -507,14 +479,14 @@ end
 function playSound(pointCoords)--звук рядом с коллекционными предметами спавнить когда расстояние меньше 10.0
 	--if Citizen.InvokeNative(0xD9130842D7226045, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0) then
 	local i = 1
-	while not Citizen.InvokeNative(0xD9130842D7226045, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0) and i <= 100 do
+	while not PrepareSoundset("RDRO_Collectible_Sounds_Travelling_Saleswoman", 0) and i <= 100 do
 		i = i + 1
-		Citizen.Wait(0)
+		Wait(0)
 	end
 	
-	local soundID = Citizen.InvokeNative(0x430386FE9BF80B45, Citizen.ResultAsInteger())
+	local soundID = GetSoundId(Citizen.ResultAsInteger())
 	if soundID > 0 then
-		Citizen.InvokeNative(0xDCF5BA95BBF0FABA, soundID, "collectible_lure", pointCoords, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0, 0, true)
+		PlaySoundFromPositionWithId(soundID, "collectible_lure", pointCoords, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0, 0, true)
 		PlaySoundCoords[pointCoords] = soundID
 	else
 		PlaySoundCoords[herbCoords] = nil
@@ -525,21 +497,21 @@ end
 
 function stopSound(soundID) --удаляет звук если расстояние больше 10 метров или если сорвали растение
 	if soundID and soundID > 0 then
-		Citizen.InvokeNative(0x0F2A2175734926D8, "collectible_lure", "RDRO_Collectible_Sounds_Travelling_Saleswoman")--Any STOP_SOUND_WITH_NAME ( char* audioName, char* audioRef )  //0x0F2A2175734926D8
-		Citizen.InvokeNative(0x353FC880830B88FA, soundID)
+		StopSoundWithName("collectible_lure", "RDRO_Collectible_Sounds_Travelling_Saleswoman")--Any STOP_SOUND_WITH_NAME ( char* audioName, char* audioRef )  //0x0F2A2175734926D8
+		ReleaseSoundId(soundID)
 	end
-	Citizen.InvokeNative(0x531A78D6BF27014B, "RDRO_Collectible_Sounds_Travelling_Saleswoman")--void _RELEASE_SOUNDSET ( const char* soundsetName )  //0x531A78D6BF27014B
+	ReleaseSoundset("RDRO_Collectible_Sounds_Travelling_Saleswoman")--void _RELEASE_SOUNDSET ( const char* soundsetName )  //0x531A78D6BF27014B
 end
 
 function RareHerbs(HerbID, HerbCoords, pointCoords)
 	--if isRareHerbs(HerbID) then
 	if Config.compositeOptionsSpawn[HerbID].isUnique then
-		local foundEntities = createVolumeAndGetEntyti(HerbCoords, 0.5)
+		local foundEntities = CreateVolumeAndGetEntity(HerbCoords, 0.5)
 		for _, entity in ipairs(foundEntities) do
 			if DoesEntityExist(entity) then
 				--if isRareHerbs(HerbID) then
 				--if Config.compositeOptionsSpawn[HerbID].isNightHerb then
-					Composite[pointCoords.xy].AttachEntities = entity
+					Composite[pointCoords.xy].AttachEntity = entity
 					if Config.compositeOptionsSpawn[HerbID].isUnique then
 						EagleEyeSetCustomEntityTint(entity, 255, 255, 0)
 					end
@@ -554,9 +526,9 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 	end
 end
 
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-		Citizen.Wait(300)
+		Wait(150)
 		if playerSpawn then
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			local scenarios = getLootScenarioHash(playerPosition, 25.0, 2048, 100)
@@ -602,37 +574,8 @@ Citizen.CreateThread(function()
     end
 end)
 
-
-
---[[
-Citizen.CreateThread(function()
-	while true do
-		Wait(250)
-		if IsDisabledControlPressed(0, joaat("INPUT_LOOT3")) then
-			local playerPosition = GetEntityCoords(PlayerPedId())
-			local scenarios = getLootScenarioHash(playerPosition, 2.0, 256, 5)
-			if scenarios and #scenarios > 0 then
-				for _, scenarioData in ipairs(scenarios) do
-					local HerbID = scenarioData.herbsScenarioPoint.HerbID
-					if isSPHerbs(HerbID) then
-						local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
-						if Composite[pointCoords.xy] then
-							--local pickTime = equipKnife(HerbID)
-							local pickTime = getPickupTime(HerbID)
-							local prompt = Composite[pointCoords.xy].PickupPrompt
-							
-							PicUpOrchid(pointCoords.xy, prompt, pickTime)
-							break
-						end
-					end
-				end
-			end
-		end
-	end
-end)
---]]
 function PromptsSetGroup(PickupPrompt, group_Promt)
-	if PickupPrompt and Citizen.InvokeNative(0x347469FBDD1589A9, PickupPrompt) then
+	if PickupPrompt and PromptIsValid(PickupPrompt) then
 		PromptSetEnabled(PickupPrompt, true)
 		PromptSetVisible(PickupPrompt, true)
 		PromptSetGroup(PickupPrompt, group_Promt)
@@ -642,7 +585,7 @@ end
 function DeletePromptAndGroup(pointCoords)
 	if Composite[pointCoords].PickupPrompt then
 		PromptRemoveGroup(Composite[pointCoords].PickupPrompt, Composite[pointCoords].GroupPromt)
-		Citizen.InvokeNative(0x00EDE88D4D13CF59, Composite[pointCoords].PickupPrompt)
+		PromptDelete(Composite[pointCoords].PickupPrompt)
 		Composite[pointCoords].GroupPromt = nil
 		Composite[pointCoords].PickupPrompt = nil		
 	end
@@ -650,43 +593,42 @@ end
 
 function PicUpOrchid(pointCoords, pickupPrompt, pickTime)
 	local picking = false	
-	while Citizen.InvokeNative(0xE0F65F0640EF0617, pickupPrompt) do			
-		local entities = Composite[pointCoords.xy].AttachEntities
+	if PromptHasHoldModeCompleted(pickupPrompt) then
+		local PlayerPed = PlayerPedId()
+		local entity = Composite[pointCoords.xy].AttachEntity
 		local groupPromt = Composite[pointCoords.xy].GroupPromt
 		--удаляем prompt
 		DeletePromptAndGroup(pointCoords.xy)
 		
 		local threadId = Citizen.CreateThread(function()
 			while picking do
-				Citizen.Wait(0) -- Продолжаем выполнение других тиков
+				Wait(0) -- Продолжаем выполнение других тиков
 				local ped = PlayerId()
 				-- Отключаем орлиный глаз (может быть и не нужно, если уже отключено выше)
 				Citizen.InvokeNative(0x64FF4BF9AF59E139, ped, true) -- _SECONDARY_SPECIAL_ABILITY_SET_DISABLED
 				Citizen.InvokeNative(0xC0B21F235C02139C, ped)       -- _SPECIAL_ABILITY_SET_EAGLE_EYE_DISABLED
 				
-				DisableControlAction(0, 0x811F4A1A, true)
-				DisableControlAction(0, 0xCEE12B50, true)
+				DisableControlAction(0, `INPUT_SECONDARY_SPECIAL_ABILITY_SECONDARY`, true)
+				DisableControlAction(0, `INPUT_SPECIAL_ABILITY`, true)
 			end
 		end)
 		--print("Нажали")
 		picking = true
-		local model = GetEntityModel(entities)
-		local playerPosition = GetEntityCoords(PlayerPedId())
-		Citizen.InvokeNative(0x48FAE038401A2888, PlayerPedId(), entities) --этой командой лутает цветки и т.д.
-		SetModelAsNoLongerNeeded(model)
-        SetEntityAsNoLongerNeeded(entities)
-		Composite[pointCoords.xy].AttachEntities = nil		
+		local model = GetEntityModel(entity)
+		local playerPosition = GetEntityCoords(PlayerPed)
+		TaskLootEntity(PlayerPed, entity) --этой командой лутает цветки и т.д.
+		--SetModelAsNoLongerNeeded(model)
+        --SetEntityAsNoLongerNeeded(entity)
+		Composite[pointCoords.xy].AttachEntity = nil		
 		
-		Citizen.Wait(pickTime * 1000) -- чтобы не было повторных нажатий
-		--if PlaySoundCoords[pointCoords] then
-		--	print("Sound333 = " .. PlaySoundCoords[pointCoords])
-		--	stopSound(PlaySoundCoords[pointCoords])
-		--	PlaySoundCoords[pointCoords] = nil				
-		--end
+		Wait(pickTime * 1000) -- чтобы не было повторных нажатий
+		ClearPedTasks(PlayerPed)
+		ClearPedSecondaryTask(PlayerPed)
+
 		FindPicupCompositeAndCoords(playerPosition, model, true)		
-		EnableControlAction(0, 0x811F4A1A, true)
-		EnableControlAction(0, 0xCEE12B50, true)		
-		Citizen.InvokeNative(0x87ED52AE40EA1A52, threadId)--TERMINATE_THREAD
+		EnableControlAction(0, `INPUT_SECONDARY_SPECIAL_ABILITY_SECONDARY`, true)
+		EnableControlAction(0, `INPUT_SPECIAL_ABILITY`, true)
+		--Citizen.InvokeNative(0x87ED52AE40EA1A52, threadId)--TERMINATE_THREAD
 	end
 	picking = false	
 end
@@ -694,56 +636,55 @@ end
 
 function SPHerbs(HerbID, herbCoords, pointCoords)
 	if isSPHerbs(HerbID) then
-		local attachEntities = nil
-		local foundEntities = createVolumeAndGetEntyti(herbCoords, 0.5)
+		local attachEntity = nil
+		local foundEntities = CreateVolumeAndGetEntity(herbCoords, 0.5)
 		if foundEntities then
 			if #foundEntities > 1 then
 				for _, entity in ipairs(foundEntities) do
 					--BOOL IS_ENTITY_ATTACHED ( Entity entity )  //0xEE6AD63ABF59C0B7
-					if Citizen.InvokeNative(0xEE6AD63ABF59C0B7, entity) then
-						attachEntities = entity
-					--else
-					--	SetEntityAsNoLongerNeeded(entity)
+					if IsEntityAttached(entity) then
+						attachEntity = entity
 					end
 				end
 			elseif isSPHerbsOneEntities(HerbID) and foundEntities[1] then
-				attachEntities = foundEntities[1]
+				attachEntity = foundEntities[1]
 			end
-			if DoesEntityExist(attachEntities) then
-				Composite[pointCoords.xy].AttachEntities = attachEntities
-				Composite[pointCoords.xy].Entities = foundEntities
+
+			if DoesEntityExist(attachEntity) then
+				Composite[pointCoords.xy].AttachEntity = attachEntity
+				Composite[pointCoords.xy].Entitys = foundEntities
 				if Config.compositeOptionsSpawn[HerbID].isUnique then
-					EagleEyeSetCustomEntityTint(attachEntities, 255, 255, 0)
+					EagleEyeSetCustomEntityTint(attachEntity, 255, 255, 0)
 				end
 				
-				
-				local groupPromt = Citizen.InvokeNative(0xB796970BD125FCE8, attachEntities, Citizen.ResultAsInteger())
+				--добавляем наш промпт к SP растению
+				local groupPromt = UiPromptGetGroupIdForTargetEntity(attachEntity, Citizen.ResultAsInteger())
 				local pickupPrompt = CreatePrompts()
 				PromptsSetGroup(pickupPrompt, groupPromt)
 				Composite[pointCoords.xy].GroupPromt = groupPromt
 				Composite[pointCoords.xy].PickupPrompt = pickupPrompt
 			else
-				print("ERROR: attachEntities not exist.")
+				print("ERROR: attachEntity not exist.")
 			end
 		end
 	end
 end
 
 function addEffectAndCheck(pointCoords, HerbID)
-	local foundEntities = createVolumeAndGetEntyti(pointCoords, 0.5)
+	local foundEntities = CreateVolumeAndGetEntity(pointCoords, 0.5)
 	local is_particle_effect_active = false
     local current_ptfx_handle_id = false
 	local player = PlayerId()
 		
 	if DoesEntityExist(foundEntities[2]) then -- 2 индекс это яйца- их когда собрал то эффект пропадает потому что нет entiti
-		Composite[pointCoords.xy].AttachEntities = foundEntities[2]
+		Composite[pointCoords.xy].AttachEntity = foundEntities[2]
 		if Config.compositeOptionsSpawn[HerbID].isUnique then
 			EagleEyeSetCustomEntityTint(foundEntities[1], 255, 255, 0)
 		end
 		
 		CreateThread(function()
 			while true do
-			Citizen.Wait(100)			
+			Wait(100)			
 				if Citizen.InvokeNative(0x45AB66D02B601FA7, player) then
                     -- Eagle Eyes : ON
                     if not is_particle_effect_active then
@@ -751,7 +692,7 @@ function addEffectAndCheck(pointCoords, HerbID)
                             Citizen.InvokeNative(0xF2B2353BBC0D4E8F, joaat("eagle_eye"))                                 -- RequestNamedPtfxAsset
                             local counter = 0
                             while not Citizen.InvokeNative(0x65BB72F29138F5D6, joaat("eagle_eye")) and counter <= 300 do -- while not HasNamedPtfxAssetLoaded
-                                Citizen.Wait(0)
+                                Wait(0)
                             end							
                         end
                         if Citizen.InvokeNative(0x65BB72F29138F5D6, joaat("eagle_eye")) then -- HasNamedPtfxAssetLoaded
@@ -781,24 +722,24 @@ end
 
 
 
-function createVolumeAndGetEntyti(herbCoords, scale) --scale = 5.0
-	local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
-	local itemSet = CreateItemset(1)
-	local itemCount = Citizen.InvokeNative(0x886171A12F400B89, volumeArea, itemSet, 3) -- Get volume items into itemset
+function CreateVolumeAndGetEntity(herbCoords, scale) --scale = 5.0
+	local volumeArea = CreateVolumeSphere(herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
+	local itemSet = CreateItemset(true)
+	local itemCount = GetEntitiesInVolume(volumeArea, itemSet, 3) -- Get volume items into itemset
 	local foundEntities = {}
-	--print("itemCount" .. itemCount)
 	if itemCount then	
 		for index = 0, itemCount - 1 do
 			local entity = GetIndexedItemInItemset(index, itemSet)
 			--print("entity = " .. entity)
-			if Citizen.InvokeNative(0x0A27A546A375FDEF, entity) then--IS_ENTITY_AN_OBJECT
+			if IsEntityAnObject(entity) then--IS_ENTITY_AN_OBJECT
 				table.insert(foundEntities, entity) -- Добавляем найденный Entity в таблицу
 			end
 		end	
 	end
-	Citizen.InvokeNative(0x20A4BF0E09BEE146, itemSet) -- Empty Item Set
-	if Citizen.InvokeNative(0x92A78D0BEDB332A3, volumeArea) then --BOOL DOES_VOLUME_EXIST ( Volume volume )  //0x92A78D0BEDB332A3
-		Citizen.InvokeNative(0x43F867EF5C463A53, volumeArea) --void _DELETE_VOLUME ( Volume volume )  //0x43F867EF5C463A53
+	ClearItemset(itemSet) -- Empty Item Set
+	DestroyItemset(itemSet)
+	if DoesVolumeExist(volumeArea) then --BOOL DOES_VOLUME_EXIST ( Volume volume )  //0x92A78D0BEDB332A3
+		DeleteVolume(volumeArea) --void _DELETE_VOLUME ( Volume volume )  //0x43F867EF5C463A53
 	end
 	return foundEntities
 end
@@ -838,50 +779,43 @@ function IsControlAlwaysPressed(inputGroup, control)
 end
 
 function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
-	local nearestScenario, pointCoords, HerbID = GetNearestScenario(PickUpPlayerCoords, Model)
+	local pickupCoords = PickUpPlayerCoords
+	if IsPedOnMount(PlayerPedId()) then
+		pickupCoords = GetEntityCoords(PlayerPedId())
+	end	
+	local nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(pickupCoords, Model)
 	if nearestScenario then
-		local compositeCoords = Composite[pointCoords.xy].HerbCoords			
-		local compositeIndex = GetNearestCopmositeIdIndex(PickUpPlayerCoords, compositeCoords)
 		if compositeIndex ~= nil then
 			local nearestCompositeId = Composite[pointCoords.xy].CompositeId[compositeIndex]
-			--local nearestVegModifierHandle = Composite[pointCoords.xy].VegModifierHandle[compositeIndex]
-			Composite[pointCoords.xy].HerbCoords[compositeIndex] = vector3(0.0, 0.0, 0.0)
-			--удалять не надо. Они сами деспавнятся когда игрок далеко отойдет
-			--иначе кусты пропадаю прямо перед игроком.
-			--if isRareHerbs(HerbID) or isEggs(HerbID) then
+			
 			if Config.compositeOptionsSpawn[HerbID].isUnique then
-				--print("222pointCoords = " .. pointCoords.xy)
-				--SetEntityAsMissionEntity(Composite[pointCoords.xy].AttachEntities, true, true)
-				--DeleteEntity(Composite[pointCoords.xy].AttachEntities)
-				Composite[pointCoords.xy].AttachEntities = nil
+				--SetEntityAsMissionEntity(Composite[pointCoords.xy].AttachEntity, true, true)
+				--DeleteEntity(Composite[pointCoords.xy].AttachEntity)
+				Composite[pointCoords.xy].AttachEntity = nil
 				DeleteEffect(pointCoords.xy)				
 			end
 			--останавливаем звук и удаляем его запись
 			if PlaySoundCoords[pointCoords] then
 				stopSound(PlaySoundCoords[pointCoords])
 				PlaySoundCoords[pointCoords] = nil				
-			end
-			if not HerbsRemains(pointCoords.xy) then
-				SetScenarioPointActive(nearestScenario.scenario, false)					
-				--это по хорошему надо бы в DB закинуть. И при старте деактивировать все точки уже собранные.
-				Config.FullLootedScenarioPoint[pointCoords.xy] = nearestScenario.scenario
-				print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
-				--print("pointCoords.xy = " .. pointCoords.xy)
-				TriggerServerEvent('rsg-composite:saveGatheredPoint', pointCoords.xy, nearestScenario.scenario)				
-			end
+			end			
 			
 			local CompositeAmount = GetHerbPicupAmountID(HerbID)			
 			
 			if Pickup then
 				--мы собрали
-				print("Мы собрали: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
+				if Config.Debug then
+					print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. compositeIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. CompositeAmount)
+				end
 				TriggerServerEvent("rsg-composite:server:Gathered", HerbID, CompositeAmount)
 				--дополнительная награда
 				GiveAdditionalRewards(HerbID)
 				--PlaySoundFrontend("Core_Fill_Up", "Consumption_Sounds", true, 0)
 			else
 				--мы съели
-				print("Мы съели: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
+				if Config.Debug then
+					print("Мы съели: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
+				end
 				Eating(HerbID)
 				TriggerServerEvent("rsg-composite:server:Eating", HerbID)
 				if not Config.compositeOptionsEat[HerbID].isPoison then
@@ -891,8 +825,23 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			local herbType = GetHerbType(HerbID)
 			if herbType ~= 0 then
 				TelemetryHerbPicked(herbType)
-				CompendiumHerbPicked(herbType, PickUpPlayerCoords)
+				CompendiumHerbPicked(herbType, pickupCoords)
 				--print("add in telemetry and compendium " .. tostring(herbType))
+			end
+			Composite[pointCoords.xy].HerbCoords[compositeIndex] = vector3(0.0, 0.0, 0.0)
+			--Citizen.InvokeNative(0x5758B1EE0C3FD4AC, nearestCompositeId, false) --удаляем композит. Только для дебага
+			--Composite[pointCoords].HerbCoords[compositeIndex] = {x = 0.0, y = 0.0, z = 0.0}
+			--удалять не надо. Они сами деспавнятся когда игрок далеко отойдет
+			--иначе кусты пропадаю прямо перед игроком.
+			--if isRareHerbs(HerbID) or isEggs(HerbID) then
+			if not HerbsRemains(pointCoords.xy) then
+				SetScenarioPointActive(nearestScenario, false)					
+				--это по хорошему надо бы в DB закинуть. И при старте деактивировать все точки уже собранные.
+				Config.FullLootedScenarioPoint[pointCoords.xy] = nearestScenario
+				if Config.Debug then
+					print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
+				end
+				TriggerServerEvent('rsg-composite:saveGatheredPoint', pointCoords.xy, nearestScenario)				
 			end
 		else
 			print("ERROR: No compositeIndex")
@@ -916,61 +865,55 @@ function GiveAdditionalRewards(herbID)
 	end
 end
 
-function GetNearestCopmositeIdIndex(PickUpPlayerCoords, herbCoords)
-	-- Теперь пройдемся по всем координатам растений и найдем ближайшую
-	local minDistance = 25.0
-	local compositeIndex = nil
-	for index, compositeCoords in ipairs(herbCoords) do
-		local dist = #(PickUpPlayerCoords - compositeCoords)
-		if dist < minDistance then
-			minDistance = dist
-			compositeIndex = index
-		end
-	end
-	print("compositeIndex = " .. compositeIndex)
-	return compositeIndex
-end
-
 function GetNearestScenario(PickUpPlayerCoords, Model)
 	local radius = 30.0 --не меньше 15 потому что яйца тогда при отходе не берутся.
-	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 2048, 200)	
 	local minDistance = radius
 	local scenar = nil
 	local pCoords = nil
 	local herbId = nil
+	local compositeIndex = nil
 	local lootHerb = GetHerbIDFromLootedModel(Model)
+	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 2048, 200)
+	local pickupCoords = PickUpPlayerCoords
+	
 	-- Теперь пройдемся по всем точкам и найдем ближайшую в момент взятия
 	for _, scenarioData in ipairs(scenarios) do
 		local HerbID = scenarioData.herbsScenarioPoint.HerbID
-		--print("lootHerb1= " .. lootHerb, "HerbID= " .. HerbID)
 		if lootHerb == 	HerbID then
 			local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
-			local dist = #(PickUpPlayerCoords - pointCoords)
+			local dist = #(pickupCoords - pointCoords)
 			if dist < minDistance then
 				minDistance = dist
-				scenar = scenarioData
+				scenar = scenarioData.scenario
 				pCoords = pointCoords
 			end
 		end	
 	end
 	if pCoords then
-		herbId = Composite[pCoords.xy].HerbID	
-		return scenar, pCoords, herbId
+		herbId = Composite[pCoords.xy].HerbID
+		minDistance = radius
+		local herbCoords = Composite[pCoords.xy].HerbCoords
+		for index, compositeCoords in ipairs(herbCoords) do
+			if not VectorEmpty(herbCoords[index]) then
+				local dist = #(pickupCoords - compositeCoords)
+				if dist < minDistance then
+					minDistance = dist
+					compositeIndex = index
+				end
+			end
+		end
+		
+		return scenar, pCoords, herbId, compositeIndex
 	end
+	return nil, nil, nil, nil
 end
 
 function HerbsRemains(nearestScenarioPointIndex)
 	-- Теперь пройдемся по всем координатам растений и найдем ближайшую
-	local haveCoords = 0
-	--local nearestCompIndex = nil
 	for index = 1, 4 do
 		if not VectorEmpty(Composite[nearestScenarioPointIndex].HerbCoords[index]) then
-			haveCoords = haveCoords + 1
+			return true
 		end
-	end
-	
-	if haveCoords > 0 then
-		return true
 	end
 	return false
 end
@@ -1019,14 +962,13 @@ RegisterNetEvent("rsg-composite:server:Eating", function(herbID, itemName)
         return
     else
         isBusy = not isBusy
-        sleep = 750
         SetCurrentPedWeapon(PlayerPedId(), joaat("weapon_unarmed"))
-        Citizen.Wait(100)
+        Wait(100)
         if not IsPedOnMount(PlayerPedId()) and not IsPedInAnyVehicle(PlayerPedId()) then
 			local dict = loadAnimDict('mech_inventory@eating@multi_bite@sphere_d8-4_fruit')
             TaskPlayAnim(PlayerPedId(), dict, 'quick_right_hand_throw', 5.0, 5.0, -1, 1, false, false, false)
         end
-        Wait(sleep)        
+        Wait(750)        
         Eating(herbID)
 		TriggerServerEvent("rsg-composite:server:Eating", herbID)
 		TriggerEvent("rsg-inventory:client:ItemBox", RSGCore.Shared.Items[itemName], "remove")
@@ -1053,7 +995,7 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 	SetPlayerHealth(health)
 
 	if stamina ~= 0 then
-		Citizen.InvokeNative(0xC3D4B754C0E86B9E, player, stamina)
+		ChangePedStamina(player, stamina)
 	end
 	if stress ~= 0 then
 		TriggerServerEvent(stress > 0 and 'hud:server:GainStress' or 'hud:server:RelieveStress', math.abs(stress))
@@ -1106,9 +1048,9 @@ function PlayAnimScenesVomit()
 		end
 	end
 	LoadAnimScene(animscene)
-	while not Citizen.InvokeNative(0x477122B8D05E7968, animscene, 1, 0) do Citizen.Wait(10) end --// _IS_ANIM_SCENE_LOADED
+	while not Citizen.InvokeNative(0x477122B8D05E7968, animscene, 1, 0) do Wait(10) end --// _IS_ANIM_SCENE_LOADED
 	StartAnimScene(animscene)
-	while not Citizen.InvokeNative(0xD8254CB2C586412B, animscene, true) do Citizen.Wait(0) end		
+	while not Citizen.InvokeNative(0xD8254CB2C586412B, animscene, true) do Wait(0) end		
 	if Citizen.InvokeNative(0x25557E324489393C, animscene) then --//DOES_ANIM_SCENE_EXIST
 		Citizen.InvokeNative(0x84EEDB2C6E650000, animscene) --// _DELETE_ANIM_SCENE
 	end
@@ -1123,7 +1065,7 @@ end
 function playAnim(dict, name, time)
     RequestAnimDict(dict)
     while not HasAnimDictLoaded(dict) do
-        Citizen.Wait(100)
+        Wait(100)
     end
     TaskPlayAnim(PlayerPedId(), dict, name, 1.0, 1.0, time, 1, 0, true, 0, false, 0, false)
 end
@@ -1792,7 +1734,7 @@ function RequestAndWaitForComposite(compositeHash)
     local i = 1
     while not Citizen.InvokeNative(0x5E5D96BE25E9DF68,compositeHash) and i < 500 do  -- has COMPOSITE loaded
         i = i + 1
-        Citizen.Wait(0)
+        Wait(0)
     end
 end
 
@@ -1982,7 +1924,7 @@ end
 function playAnim(dict, name, time)
     RequestAnimDict(dict)
     while not HasAnimDictLoaded(dict) do
-        Citizen.Wait(100)
+        Wait(100)
     end
     TaskPlayAnim(PlayerPedId(), dict, name, 1.0, 1.0, time, 1, 0, true, 0, false, 0, false)
 	
@@ -2529,12 +2471,12 @@ function ResetComposites()
 		for _, data in ipairs(value.VegModifierHandle) do
 			RemoveVegModifierSphere(data, 1) -- Удалить сферу которая удаляет растения и т.д. вокруг композита
 		end
-		if value.Entities then
-			for _, data in ipairs(value.Entities) do
+		if value.Entitys then
+			for _, data in ipairs(value.Entitys) do
 				SetEntityAsMissionEntity(data, true, true)
 				DeleteEntity(data)
 			end
-			Composite[key].AttachEntities = nil
+			Composite[key].AttachEntity = nil
 		end
 		DeleteSound(key)
 		DeleteEffect(key)
@@ -2571,7 +2513,7 @@ end)
 function GetHerbCompositeNumEntities(compositeId, searchNum)
 	local struct = DataView.ArrayBuffer(256)
 	struct:SetInt32(0, searchNum) --указываем какое количество ENTITIES искать (5 хватает)
-	local Entities = {}
+	local Entitys = {}
 	local Entities2 = {}
 	local num = Citizen.InvokeNative(0x96C6ED22FB742C3E, compositeId, struct:Buffer(), Citizen.ResultAsInteger())
 	if num > 0 then
@@ -2579,7 +2521,7 @@ function GetHerbCompositeNumEntities(compositeId, searchNum)
         for i = 1, num + 1 do
             local value = struct:GetInt32(i * 8)  -- Индексы: 8, 16, 24, 32, 40
             if value > 0 then
-				table.insert(Entities, value)
+				table.insert(Entitys, value)
 				local attEnt = GetEntityAttachedTo(value)
 				if attEnt then
 					table.insert(Entities2, attEnt)
@@ -2588,7 +2530,7 @@ function GetHerbCompositeNumEntities(compositeId, searchNum)
         end
     end
 	print("Entities2 = " .. json.encode(Entities2))
-	return Entities
+	return Entitys
 end
 
 function GetHerbCompositeNumEntities2(herbCoords, scale)

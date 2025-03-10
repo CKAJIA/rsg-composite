@@ -1,5 +1,6 @@
 Config = Config or {}
 Config.FullLootedScenarioPoint = {}
+Config.Debug = true
 
 Config.AutoEquipKnife = false
 Config.UseArthurVomitAnimSceneForMen = true
