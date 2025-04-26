@@ -1000,7 +1000,7 @@ end
 function GetAttributeValue(attribute)
 	return attribute and math.random(attribute.Min, attribute.Max) or 0.0
 end
-
+--Надо разобраться с чистотой- почему-то то прибавляет то отнимает
 function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 	local player = PlayerPedId()
 
@@ -1013,13 +1013,16 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		TriggerServerEvent(stress > 0 and 'hud:server:GainStress' or 'hud:server:RelieveStress', math.abs(stress))
 	end
 	if hunger ~= 0 then
-		TriggerServerEvent("RSGCore:Server:SetMetaData", "hunger", RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
+		TriggerEvent('hud:client:UpdateHunger', RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
+		--TriggerServerEvent("RSGCore:Server:SetMetaData", "hunger", RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
 	end
 	if thirst ~= 0 then
-		TriggerServerEvent("RSGCore:Server:SetMetaData", "thirst", RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
+		TriggerEvent('hud:client:UpdateThirst', RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
+		--TriggerServerEvent("RSGCore:Server:SetMetaData", "thirst", RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
 	end
 	if clean ~= 0 then
-		TriggerServerEvent("RSGCore:Server:SetMetaData", "cleanliness", RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
+		TriggerEvent('hud:client:UpdateCleanliness', RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
+		--TriggerServerEvent("RSGCore:Server:SetMetaData", "cleanliness", RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
 	end
 end
 

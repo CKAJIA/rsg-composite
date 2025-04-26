@@ -345,7 +345,7 @@ Config.compositeOptionsEat = {
 					Thirst = {Min = 10.0, Max = 15.0},
 				},
 				rem = {
-					Clean = {Min = 1.0, Max = 5.0},
+					Clean = {Min = 5.0, Max = 7.0},
 				}
 			},
 	[34] = { isPoison = false, item = "consumable_herb_red_sage" },	--Красный шалфей
