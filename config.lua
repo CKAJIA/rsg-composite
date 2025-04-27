@@ -215,69 +215,59 @@ Config.compositeOptionsEat = {
 	[2]  = { --Аляскинский женьшень
 				isPoison = false,
 				item = "consumable_herb_alaskan_ginseng",
-				add = {
-					Health = {Min = 100.0, Max = 200.0},
-					Stamina = {Min = 25.0, Max = 45.0},
-					Hunger = {Min = 5.0, Max = 10.0},
-					Thirst = {Min = 5.0, Max = 10.0},
-					Clean = {Min = 45.0, Max = 50.0},
+				param = {
+					Health = {Min = 100, Max = 200},
+					Stamina = {Min = 25, Max = 45},
+					Hunger = {Min = 5, Max = 10},
+					Thirst = {Min = 5, Max = 10},
+					Clean = {Min = 45, Max = 50},
+					Stress = {Min = -10, Max = -15},
 				},
-				rem = {
-					Stress = {Min = 10.0, Max = 15.0},
-				}
 			},
 	[3]  = { --Американский женьшень
 				isPoison = false,
 				item = "consumable_herb_american_ginseng",
-				add = {
-					Health = {Min = 100.0, Max = 200.0},
-					Stamina = {Min = 25.0, Max = 45.0},
-					Hunger = {Min = 5.0, Max = 10.0},
-					Thirst = {Min = 5.0, Max = 10.0},
-					Clean = {Min = 45.0, Max = 50.0},
+				param = {
+					Health = {Min = 100, Max = 200},
+					Stamina = {Min = 25, Max = 45},
+					Hunger = {Min = 5, Max = 10},
+					Thirst = {Min = 5, Max = 10},
+					Clean = {Min = 45, Max = 50},
+					Stress = {Min = -10, Max = -15},
 				},
-				rem = {
-					Stress = {Min = 10.0, Max = 15.0},
-				}
 			},
 	[4]  = { isPoison = false, item = "consumable_herb_bay_bolete" },	--Польский гриб
 	[5]  = { --Ежевика
 				isPoison = false,
 				item = "consumable_herb_black_berry",
-				add = {
-					Hunger = {Min = 1.0, Max = 5.0},
-					Thirst = {Min = 10.0, Max = 15.0},
+				param = {
+					Hunger = {Min = 1, Max = 5},
+					Thirst = {Min = 10, Max = 15},
+					Clean = {Min = -1, Max = -5},
 				},
-				rem = {
-					Clean = {Min = 1.0, Max = 5.0},
-				}
 			},
 	[6]  = { --Черная смородина
 				isPoison = false,
 				item = "consumable_herb_black_currant",
-				add = {
-					Hunger = {Min = 1.0, Max = 5.0},
-					Thirst = {Min = 10.0, Max = 15.0},
+				param = {
+					Hunger = {Min = 1, Max = 5},
+					Thirst = {Min = 10, Max = 15},
+					Clean = {Min = -1, Max = -5},
 				},
-				rem = {
-					Clean = {Min = 1.0, Max = 5.0},
-				}
 			},
 	[7]  = { isPoison = false, item = "consumable_herb_burdock_root" },	--Корень лопуха
 	[8]  = { isPoison = false, item = "consumable_herb_chanterelles" },	--Лисички
 	[11] = { --Камыш обыкновенный
 				isPoison = true,
 				item = "consumable_herb_common_bulrush",
-				add = {
-					Stress = {Min = 5.0, Max = 15.0}
+				param = {					
+					Health = {Min = -100, Max = -200},
+					Stamina = {Min = -25, Max = -45},
+					Hunger = {Min = -10, Max = -20},
+					Thirst = {Min = -15, Max = -30},
+					Clean = {Min = -5, Max = -10},
+					Stress = {Min = 5, Max = 15}
 				},
-				rem = {
-					Health = {Min = 100.0, Max = 200.0},
-					Stamina = {Min = 25.0, Max = 45.0},
-					Hunger = {Min = 10.0, Max = 20.0},
-					Thirst = {Min = 15.0, Max = 30.0},
-					Clean = {Min = 5.0, Max = 10.0},
-				}
 			},
 	[12] = { isPoison = false, item = "consumable_herb_creeping_thyme" },	--Тимьян ползучий
 	[13] = { isPoison = false, item = "consumable_herb_desert_sage" },	--Пустынный шалфей
@@ -285,53 +275,45 @@ Config.compositeOptionsEat = {
 	[16] = { --Черника овальнолистная
 				isPoison = false,
 				item = "consumable_herb_evergreen_huckleberry",
-				add = {
-					Hunger = {Min = 1.0, Max = 5.0},
-					Thirst = {Min = 10.0, Max = 15.0},
+				param = {
+					Hunger = {Min = 1, Max = 5},
+					Thirst = {Min = 10, Max = 15},
+					Clean = {Min = -1, Max = -5},
 				},
-				rem = {
-					Clean = {Min = 1.0, Max = 5.0},
-				}
 			},
 	[18] = { --Смородина золотистая
 				isPoison = false,
 				item = "consumable_herb_golden_currant",
-				add = {
-					Hunger = {Min = 1.0, Max = 5.0},
-					Thirst = {Min = 10.0, Max = 15.0},
+				param = {
+					Hunger = {Min = 1, Max = 5},
+					Thirst = {Min = 10, Max = 15},
+					Clean = {Min = -1, Max = -5},
 				},
-				rem = {
-					Clean = {Min = 1.0, Max = 5.0},
-				}
 			},
 	[19] = { isPoison = false, item = "consumable_herb_hummingbird_sage" },	--Шалфей покрывальцевый
 	[20] = { isPoison = true, item = "consumable_herb_indian_tobacco" },		--Индейский табак
 	[23] = { --Молочай
 				isPoison = false,
 				item = "consumable_herb_milkweed",
-				add = {
-					Health = {Min = 25.0, Max = 35.0},
-					Stamina = {Min = 5.0, Max = 15.0},
-					Hunger = {Min = 5.0, Max = 10.0},
+				param = {
+					Health = {Min = 25, Max = 35},
+					Stamina = {Min = 5, Max = 15},
+					Hunger = {Min = 5, Max = 10},
+					Thirst = {Min = -5, Max = -10},
+					Clean = {Min = -5, Max = -10},
 				},
-				rem = {
-					Thirst = {Min = 5.0, Max = 10.0},
-					Clean = {Min = 5.0, Max = 10.0},
-				}
 			},
 	[26] = { --Олеандр
 				isPoison = true,
 				item = "consumable_herb_oleander_sage",
-				add = {
-					Stress = {Min = 5.0, Max = 15.0}
+				param = {
+					Stress = {Min = 5, Max = 15},
+					Health = {Min = -100.0, Max = -200},
+					Stamina = {Min = -25, Max = -45},
+					Hunger = {Min = -10, Max = -20},
+					Thirst = {Min = -15, Max = -30},
+					Clean = {Min = -5, Max = -10},
 				},
-				rem = {
-					Health = {Min = 100.0, Max = 200.0},
-					Stamina = {Min = 25.0, Max = 45.0},
-					Hunger = {Min = 10.0, Max = 20.0},
-					Thirst = {Min = 15.0, Max = 30.0},
-					Clean = {Min = 5.0, Max = 10.0},
-				}
 			},
 	[27] = { isPoison = false, item = "consumable_herb_oregano" },	--Душица
 	[28] = { isPoison = false, item = "consumable_herb_parasol_mushroom" },	--Гриб-зонтик
@@ -340,13 +322,15 @@ Config.compositeOptionsEat = {
 	[33]  = { --Малина
 				isPoison = false,
 				item = "consumable_herb_red_raspberry",
-				add = {
-					Hunger = {Min = 1.0, Max = 5.0},
-					Thirst = {Min = 10.0, Max = 15.0},
+				param = {
+					--Health = {Min = 100, Max = 200},
+					--Stamina = {Min = 25, Max = 45},
+					Stress = {Min = -5, Max = -10},
+					--Hunger = {Min = 1, Max = 5},
+					--Thirst = {Min = 10, Max = 15},
+					--Clean = {Min = -1, Max = -5},
+					
 				},
-				rem = {
-					Clean = {Min = 5.0, Max = 7.0},
-				}
 			},
 	[34] = { isPoison = false, item = "consumable_herb_red_sage" },	--Красный шалфей
 	[38] = { isPoison = false, item = "consumable_herb_violet_snowdrop" },	--Фиолетовый подснежник
@@ -354,10 +338,10 @@ Config.compositeOptionsEat = {
 				isPoison = false, 
 				item = "consumable_herb_wild_carrots",
 				use = false,
-				add = {
+				param = {
 					Health = {Min = 15.0, Max = 20.0},
 					Hunger = {Min = 5.0, Max = 15.0},
-				}
+				},
 			},
 	[40] = { isPoison = false, item = "consumable_herb_wild_feverfew" },	--Дикий пиретрум
 	[41] = { isPoison = false, item = "consumable_herb_wild_mint" },	--Мята

@@ -934,32 +934,17 @@ function Eating(herbID)
 	local Options = Config.compositeOptionsEat[herbID]
 	if Options then
 		local player = PlayerPedId()
-		local health = 0.0
-		local stamina = 0.0
-		local stress = 0.0
-		local hunger = 0.0
-		local thirst = 0.0
-		local clean = 0.0
-		if Options.add or Options.rem then			
-			if Options.add then
-				health = health + (GetAttributeValue(Options.add.Health) or 0.0)
-				stamina = stamina + (GetAttributeValue(Options.add.Stamina) or 0.0)
-				stress = stress + (GetAttributeValue(Options.add.Stress) or 0.0)
-				hunger = hunger + (GetAttributeValue(Options.add.Hunger) or 0.0)
-				thirst = thirst + (GetAttributeValue(Options.add.Thirst) or 0.0)
-				clean = clean + (GetAttributeValue(Options.add.Clean) or 0.0)
-			end
-			if Options.rem then
-				health = health - (GetAttributeValue(Options.rem.Health) or 0.0)
-				stamina = stamina - (GetAttributeValue(Options.rem.Stamina) or 0.0)
-				stress = stress - (GetAttributeValue(Options.rem.Stress) or 0.0)
-				hunger = hunger - (GetAttributeValue(Options.rem.Hunger) or 0.0)
-				thirst = thirst - (GetAttributeValue(Options.rem.Thirst) or 0.0)
-				clean = clean - (GetAttributeValue(Options.rem.Clean) or 0.0)
-			end
+		if Options.param then
+			local health = GetAttributeValue(Options.param.Health)
+			local stamina = GetAttributeValue(Options.param.Stamina)
+			local stress = GetAttributeValue(Options.param.Stress)
+			local hunger = GetAttributeValue(Options.param.Hunger)
+			local thirst = GetAttributeValue(Options.param.Thirst)
+			local clean = GetAttributeValue(Options.param.Clean)
 			--print("health = " .. health, "stamina = " .. stamina, "stress = " .. stress, "hunger = " .. hunger, "thirst = " .. thirst, "clean = " .. clean)
 			ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		end
+
 		if Options.isPoison then
 			if GetEntityHealth(player) > 0 and IsEntityDead(player) == false then
 				PlayAnimScenesVomit()
@@ -997,9 +982,32 @@ function loadAnimDict(dict, anim)
     return dict
 end
 
+-- Универсальная функция для получения значения параметра (float)
 function GetAttributeValue(attribute)
-	return attribute and math.random(attribute.Min, attribute.Max) or 0.0
+	if type(attribute) == "table" and attribute.Min and attribute.Max then
+		local min = tonumber(attribute.Min)
+		local max = tonumber(attribute.Max)
+
+		-- Защита: если случайно Min больше Max, меняем местами
+		if min > max then
+			min, max = max, min
+		end
+
+		-- Возвращаем случайное float-значение в диапазоне
+		--return min + math.random() * (max - min) * 1.0--так будет возвращать дробное значение т.е. 1.245
+		return math.random(min, max) * 1.0 --так просто float 3.0 или -5.0
+	
+	elseif type(attribute) == "number" then
+		-- Если просто число — возвращаем как float
+		return attribute * 1.0
+	end
+
+	-- Если ничего не подошло — возвращаем 0.0
+	return 0.0
 end
+
+
+
 --Надо разобраться с чистотой- почему-то то прибавляет то отнимает
 function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 	local player = PlayerPedId()
@@ -1010,18 +1018,19 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		ChangePedStamina(player, stamina)
 	end
 	if stress ~= 0 then
-		TriggerServerEvent(stress > 0 and 'hud:server:GainStress' or 'hud:server:RelieveStress', math.abs(stress))
+		--TriggerEvent(stress > 0 and 'hud:client:GainStress' or 'hud:client:RelieveStress', math.abs(stress))
+		TriggerEvent('hud:client:UpdateStress', LocalPlayer.state.stress + stress)
 	end
 	if hunger ~= 0 then
-		TriggerEvent('hud:client:UpdateHunger', RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
+		TriggerEvent('hud:client:UpdateHunger', LocalPlayer.state.hunger + hunger)
 		--TriggerServerEvent("RSGCore:Server:SetMetaData", "hunger", RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
 	end
 	if thirst ~= 0 then
-		TriggerEvent('hud:client:UpdateThirst', RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
+		TriggerEvent('hud:client:UpdateThirst', LocalPlayer.state.thirst + thirst)
 		--TriggerServerEvent("RSGCore:Server:SetMetaData", "thirst", RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
 	end
 	if clean ~= 0 then
-		TriggerEvent('hud:client:UpdateCleanliness', RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
+		TriggerEvent('hud:client:UpdateCleanliness', LocalPlayer.state.cleanliness + clean)
 		--TriggerServerEvent("RSGCore:Server:SetMetaData", "cleanliness", RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
 	end
 end
