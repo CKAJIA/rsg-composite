@@ -323,12 +323,9 @@ Config.compositeOptionsEat = {
 				isPoison = false,
 				item = "consumable_herb_red_raspberry",
 				param = {
-					--Health = {Min = 100, Max = 200},
-					--Stamina = {Min = 25, Max = 45},
-					Stress = {Min = -5, Max = -10},
-					--Hunger = {Min = 1, Max = 5},
-					--Thirst = {Min = 10, Max = 15},
-					--Clean = {Min = -1, Max = -5},
+					Hunger = {Min = 1, Max = 5},
+					Thirst = {Min = 10, Max = 15},
+					Clean = {Min = -1, Max = -5},
 					
 				},
 			},

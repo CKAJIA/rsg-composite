@@ -1018,8 +1018,8 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		ChangePedStamina(player, stamina)
 	end
 	if stress ~= 0 then
-		--TriggerEvent(stress > 0 and 'hud:client:GainStress' or 'hud:client:RelieveStress', math.abs(stress))
 		TriggerEvent('hud:client:UpdateStress', LocalPlayer.state.stress + stress)
+		--TriggerEvent(stress > 0 and 'hud:client:GainStress' or 'hud:client:RelieveStress', math.abs(stress))
 	end
 	if hunger ~= 0 then
 		TriggerEvent('hud:client:UpdateHunger', LocalPlayer.state.hunger + hunger)
