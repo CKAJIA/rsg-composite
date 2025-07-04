@@ -30,18 +30,14 @@ function CreateScenarioPointHash(scenarioHash, x, y, z, heading, radius, p6, boo
 	return Citizen.InvokeNative(0x94B745CE41DB58A1, scenarioHash, x, y, z, heading, radius, p6, bool_p7, Citizen.ResultAsInteger())
 end
 
-RegisterNetEvent('rsg-composite:client:playerCompositeLoaded')
-AddEventHandler('rsg-composite:client:playerCompositeLoaded', function(compositeData)
-    -- Обработка полученных данных о координатах
-    Config.FullLootedScenarioPoint = compositeData
-	startPointCheck()
-end)
-
-
 AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()	
 	Wait(1000)
-	TriggerServerEvent('rsg-composite:server:loadPlayerComposite')
-	playerSpawn = true
+	RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
+		Config.FullLootedScenarioPoint = compositeData
+		local PlayerData = RSGCore.Functions.GetPlayerData()
+	end)	
+	playerSpawn = true	
+	startPointCheck()
 end)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload')

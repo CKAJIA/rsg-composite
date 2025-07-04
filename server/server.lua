@@ -197,9 +197,8 @@ AddEventHandler('rsg-composite:saveGatheredPoint', function(pointcoord, scenario
 end)
 
 -- get plant
-RegisterServerEvent('rsg-composite:server:loadPlayerComposite')
-AddEventHandler('rsg-composite:server:loadPlayerComposite', function()
-	local playerId = source -- Получаем ID игрока, отправившего запрос
+RSGCore.Functions.CreateCallback('rsg-composite:server:getPlayerComposites', function(source, cb)
+	local playerId = source
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid
 	local result = MySQL.query.await('SELECT * FROM player_composites WHERE citizenid = @citizenid', {['@citizenid'] = citizenid})
@@ -217,8 +216,8 @@ AddEventHandler('rsg-composite:server:loadPlayerComposite', function()
 			end
 		end
 	end
-	TriggerClientEvent('rsg-composite:client:playerCompositeLoaded', playerId, FullLootedScenarioPoint)
 	print("Composite Data for " .. citizenid .. " uploaded successfully")
+    cb(FullLootedScenarioPoint)
 end)
 
 
