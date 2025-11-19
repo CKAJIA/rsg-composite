@@ -4,7 +4,15 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 -- version checker
 -----------------------------------------------------------------------
 local function versionCheckPrint(_type, log)
-    local color = _type == 'success' and '^2' or '^1'
+    local color = '^7' -- default
+
+    if _type == 'success' then
+        color = '^2'
+    elseif _type == 'error' then
+        color = '^1'
+    elseif _type == 'warn' then
+        color = '^3' -- "оранжевый" (жёлтый)
+    end
 
     print(('^5['..GetCurrentResourceName()..']%s %s^7'):format(color, log))
 end
@@ -14,7 +22,7 @@ local function CheckVersion()
         local currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version')
 
         if not text then
-            versionCheckPrint('error', 'Currently unable to run a version check.')
+            versionCheckPrint('warn', 'This is custom script from BadStealth(CKAJIA).')
             return
         end
 

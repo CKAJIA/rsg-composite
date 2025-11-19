@@ -59,7 +59,7 @@
     provision_ro_flower_sparrows          = { name = 'provision_ro_flower_sparrows',          label = 'Орхидея «Воробьиный башмачок»', weight = 0.05, type = 'item', image = 'provision_ro_flower_sparrows.png',          unique = false, useable = true, shouldClose = true, description = 'Слегка восстанавливает статус здоровья игрока или все статусы лошади.' },
     provision_ro_flower_spider            = { name = 'provision_ro_flower_spider',            label = 'Паучья орхидея',                weight = 0.05, type = 'item', image = 'provision_ro_flower_spider.png',            unique = false, useable = true, shouldClose = true, description = 'Слегка восстанавливает статус здоровья игрока или все статусы лошади.' },
     consumable_herb_saltbush              = { name = 'consumable_herb_saltbush',              label = 'Лук виноградничный',            weight = 0.05, type = 'item', image = 'consumable_crows_garlic.png',               unique = false, useable = true, shouldClose = true, description = 'Слегка восстанавливает статус здоровья игрока или все статусы лошади.' },
-	
+
 	-----------------------------------------------
     -- EGGS
     -----------------------------------------------
