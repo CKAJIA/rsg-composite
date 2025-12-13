@@ -5,8 +5,8 @@ local Composite = {}
 --local FullLootedScenarioPoint = {}
 local deleteDistance = 2900.0
 local CompositePointCol = 1
-local PlaySoundCoords = {}
-local PlayEffectCoords = {}
+local PlaySoundCoordsTable = {}
+local PlayEffectCoordsTable = {}
 local MaxRecordInTable = 500 --на самом деле 500 точек держится в таблице.
 local isBusy = false
 
@@ -35,7 +35,9 @@ function checkRecordAndClear(playerPosition)
 				--а если все собрали то удаляем запись
 				if not HerbsRemains(key) then
 					Composite[key] = nil--убираем запись.
-					print("No more composite in point. Delete record in Composite")
+					if Config.Debug then
+						print("No more composite in point. Delete record in Composite")
+					end
 				else				
 					Composite[key].CompositeId = {}
 					Composite[key].VegModifierHandle = {}
@@ -77,7 +79,7 @@ function DeactivatePoints(scenario)
 	SetScenarioPointActive(scenario, false)
 end
 
-function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, sF_4)
+function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, sPackedSlots)
 	local playerPosition = GetEntityCoords(PlayerPedId())
 	local pointCoords = sPointCoords
 	local herbCoords = {}
@@ -85,11 +87,12 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 	local haveRecord = false
 	local HerbID = sHerbID
 	local compositeHash = sCompositeHash	
-	local f_4 = sF_4	
+	local packedSlots = sPackedSlots
+	local key = KeyFromCoords(pointCoords.xy)
 	
 	--если уже точка собрана ничего не делаем.
-	if Config.FullLootedScenarioPoint[pointCoords.xy] then
-		local scenario = Config.FullLootedScenarioPoint[pointCoords.xy]
+	if Config.FullLootedScenarioPoint[key] then
+		local scenario = Config.FullLootedScenarioPoint[key]
 		if IsScenarioPointActive(scenario) then
 			SetScenarioPointActive(scenario, false)
 		end
@@ -98,14 +101,14 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 	-- Если записи нет в Composite, создаем её
 	if not Composite[pointCoords.xy] then
 		Composite[pointCoords.xy] = {HerbID = HerbID, CompositeHash = compositeHash,
-            PointSpawn = false, CompositeId = {}, F_4 = f_4, HerbCoords = {},
+            PointSpawn = false, CompositeId = {}, PackedSlots = packedSlots, HerbCoords = {},
             VegModifierHandle = {}, AttachEntity = nil, Entitys = {}, GroupPromt = nil, PickupPrompt = nil
         }
 		haveRecord = false
 	else
 		HerbID = Composite[pointCoords.xy].HerbID
 		compositeHash = Composite[pointCoords.xy].CompositeHash
-		f_4 = Composite[pointCoords.xy].F_4
+		packedSlots = Composite[pointCoords.xy].PackedSlots
 		SpawnCol = GetSpawnCol(HerbID)
 		if SpawnCol ~= 3 then--Это для заполнения всех растений кроме одиночных
 			herbCoords = Composite[pointCoords.xy].HerbCoords
@@ -128,13 +131,13 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 	if HerbID ~= 0 and haveRecord == false then
 		--print("First Spawn")
 		-- Первоначальный спаун растений
-		herbCoords = CreateHerbsCoords(pointCoords, f_4)
+		herbCoords = CreateHerbsCoords(pointCoords, packedSlots)
 		Composite[pointCoords.xy].HerbCoords = herbCoords
-		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
 	elseif HerbID ~= 0 and haveRecord == true and Composite[pointCoords.xy].PointSpawn == false then--проверка на заспавненую точку
 		--print("Second Spawn")
 		-- Повторный спаун
-		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+		spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
 	elseif HerbID == 0 or HerbID == nil then
 		print("No HerbID for " .. compositeHash)
 	elseif HerbHash == 0 then
@@ -143,12 +146,12 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 end
 
 -- Функция для спауна композитных объектов
-function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
     for index = 1, 4 do
-        if f_4[index] ~= nil then
+        if packedSlots[index] ~= nil then
             RequestAndWaitForComposite(compositeHash)
             if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
-                local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, f_4, pointCoords)
+                local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
                 if compositeId and compositeId > 0 then
                     Composite[pointCoords.xy].CompositeId[index] = compositeId
                     Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
@@ -165,7 +168,7 @@ end
 function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 	local serverComposite = {}
 	if not Composite[pointCoords.xy] then
-		local f_4 = {}		
+		local packedSlots = {}		
 	
 		local HerbID = herbID
 		local compositeHash = joaat(hash)
@@ -174,7 +177,7 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		if not spawnData then print("Error spawn data ID: " .. HerbID) return end
 		
 		local SpawnCol = GetSpawnCol(HerbID)	--Возращает кол-во сколько на точке(т.е. одинарные растения или нет)
-		local Unk1 = GetUnk1(HerbID)			--кроме 52(Тысячелистник) = 4 все остальное 0
+		local variantMax = GetVariantMax(HerbID)			--кроме 52(Тысячелистник) = 4 все остальное 0
 		--local MinCol = GetMinCol(HerbID)		--мин кол-во
 		--local MaxCol = GetMaxCol(HerbID)		--мах кол-во
 		--local SpawnCol = Config.compositeOptionsSpawn[HerbID].spawnCol
@@ -182,14 +185,14 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		local MaxCol = spawnData.maxCol
 						
 		if SpawnCol ~= 3 then--Это для заполнения всех растений кроме одиночных
-			f_4 = func_8(SpawnCol, MinCol, MaxCol, Unk1)
+			packedSlots = GeneratePackedCompositeSlots(SpawnCol, MinCol, MaxCol, variantMax)
 		else--Это для одиночных
-			f_4 = func_9(SpawnCol, Unk1)
+			packedSlots = GenerateSinglePackedCompositeSlot(SpawnCol, variantMax)
 		end	
-		serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, F_4 = f_4 }
+		serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, PackedSlots = packedSlots }
 		TriggerServerEvent("rsg-composite:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
 	elseif Composite[pointCoords.xy].PointSpawn == false then
-		StartCreateComposite(Composite[pointCoords.xy].HerbID, Composite[pointCoords.xy].CompositeHash, pointCoords, pointHeading, Composite[pointCoords.xy].F_4)
+		StartCreateComposite(Composite[pointCoords.xy].HerbID, Composite[pointCoords.xy].CompositeHash, pointCoords, pointHeading, Composite[pointCoords.xy].PackedSlots)
 	end
 end
 
@@ -198,7 +201,7 @@ end
 
 
 function CreatePrompts()
-	local str = CreateVarString(10, 'LITERAL_STRING', 'Взять')
+	local str = CreateVarString(10, 'LITERAL_STRING', Config.PromtName)
 	PickupPrompt = PromptRegisterBegin()
 	PromptSetControlAction(PickupPrompt, joaat("INPUT_LOOT3"))
 	PromptSetText(PickupPrompt, str)
@@ -210,111 +213,115 @@ function CreatePrompts()
 	return PickupPrompt
 end
 
-function func_8(SpawnCol, MinCol, MaxCol, Unk1)
-    local uParam1, uParam2 = func_50(SpawnCol)
-    local iVar11 = 0
-    local iVar13 = 0
-    local iVar14 = 0
-	local f_4 = {}
+function GeneratePackedCompositeSlots(spawnCol, minSlots, maxSlots, variantMax)
+    local rotationPool, offsetPool = BuildCompositeRotationPool(spawnCol)
+    local slotCount = 0
+    local offset = 0
+    local variant = 0
+	local packedSlots = {}
 
-    if MaxCol > 4 then
-        MaxCol = 4
+    if maxSlots > 4 then
+        maxSlots = 4
     end
-    if MinCol <= 0 then
-        MinCol = 1
+    if minSlots <= 0 then
+        minSlots = 1
     end
 
-	iVar11 = math.random(MinCol, MaxCol + 1)
-    for index = 1, iVar11 do
-        if uParam1[index] == 0 or uParam1[index] == nil then
-            iVar13 = 0			
-        else
-            iVar13 = uParam2[math.random(1, 3)]
-        end
+	slotCount = math.random(minSlots, maxSlots + 1)
+    for index = 1, slotCount do
 		--проверка на nil почему-то иногда получаем nil и ошибку
-		if uParam1[index] == nil  then
-			DumpTable(uParam1)
-			uParam1[index] = 0			
-			print("ERROR: uParam1[" .. index .. "] == nil")
+		if rotationPool[index] == nil  then
+			DumpTable(rotationPool)
+			rotationPool[index] = 0			
+			print("ERROR: rotationPool[" .. index .. "] == nil")
         end
-        if Unk1 > 0 then
-            iVar14 = math.random(0, Unk1)
+		
+		if rotationPool[index] == 0 then
+            offset = 0			
+        else
+            offset = offsetPool[math.random(1, 3)]
         end
+		
+        if variantMax > 0 then
+            variant = math.random(0, variantMax)
+        else
+			variant = 0
+		end
 
-		local iVar15 = ((uParam1[index] | (iVar13 << 9)) | (iVar14 << 13)) | 1073741824
+		local packedValue = ((rotationPool[index] | (offset << 9)) | (variant << 13)) | 1073741824
 
-		f_4[index] = iVar15 --заполнили f_4
+		packedSlots[index] = packedValue --заполнили packedSlots
     end
-	return f_4
+	return packedSlots
 end
 
-function func_9(SpawnCol, Unk1)
-	local uParam1, uParam2 = func_50(SpawnCol)
-	local iVar11 = 0
-	local f_4 = {}
+function GenerateSinglePackedCompositeSlot(spawnCol, variantMax)
+	local rotationPool, offsetPool = BuildCompositeRotationPool(spawnCol)
+	local variant = 0
+	local packedSlots = {}
 
-	if Unk1 > 0 then	--тут только тысячелистник 4 - но это для создания одночных функция
-		iVar11 = math.random(0, Unk1)
+	if variantMax > 0 then	--тут только тысячелистник 4 - но это для создания одночных функция
+		variant = math.random(0, variantMax)
 	end
 
-	local iVar12 = ((uParam1[1] | (0 << 9)) | (iVar11 << 13)) | 1073741824
+	local packedValue = ((rotationPool[1] | (0 << 9)) | (variant << 13)) | 1073741824
 
-	f_4[1] = iVar12 --заполнили f_4
-	return f_4
+	packedSlots[1] = packedValue --заполнили packedSlots
+	return packedSlots
 end
 
-function func_50(SpawnCol)
-    local uParam1 = {}
-    local uParam2 = {}
+function BuildCompositeRotationPool(spawnCol)
+    local rotationPool = {}
+    local offsetPool = {}
 
-    if SpawnCol == 0 then
-        uParam2[1] = 1
-        uParam2[2] = 2
-        uParam2[3] = 3
-    elseif SpawnCol == 1 then
-        uParam2[1] = 2
-        uParam2[2] = 3
-        uParam2[3] = 4
-    elseif SpawnCol == 2 then
-        uParam2[1] = 3
-        uParam2[2] = 4
-        uParam2[3] = 5
-    elseif SpawnCol == 3 then
-        uParam2[1] = 2
-        uParam2[2] = 3
-        uParam2[3] = 4
+    if spawnCol == 0 then
+        offsetPool[1] = 1
+        offsetPool[2] = 2
+        offsetPool[3] = 3
+    elseif spawnCol == 1 then
+        offsetPool[1] = 2
+        offsetPool[2] = 3
+        offsetPool[3] = 4
+    elseif spawnCol == 2 then
+        offsetPool[1] = 3
+        offsetPool[2] = 4
+        offsetPool[3] = 5
+    elseif spawnCol == 3 then
+        offsetPool[1] = 2
+        offsetPool[2] = 3
+        offsetPool[3] = 4
     else
-        uParam2[1] = 2
-        uParam2[2] = 3
-        uParam2[3] = 4
+        offsetPool[1] = 2
+        offsetPool[2] = 3
+        offsetPool[3] = 4
     end
 
-    uParam1[1] = 0
-    uParam1[2] = 67
-    uParam1[3] = 139
-    uParam1[4] = 223
-    uParam1[5] = 293
-    uParam1[6] = 359
+    rotationPool[1] = 0
+    rotationPool[2] = 67
+    rotationPool[3] = 139
+    rotationPool[4] = 223
+    rotationPool[5] = 293
+    rotationPool[6] = 359
 
-    local iVar0 = 6
-    while iVar0 > 1 do
-        local iVar1 = math.random(1, iVar0)--Тут возможно надо + 2
-        local uVar2 = uParam1[iVar1]
-        uParam1[iVar1] = uParam1[iVar0]
-        uParam1[iVar0] = uVar2
-        iVar0 = iVar0 - 1
+    local lastIndex = 6
+    while lastIndex > 1 do
+        local j = math.random(1, lastIndex)--Тут возможно надо + 2
+        local tmp = rotationPool[j]
+        rotationPool[j] = rotationPool[lastIndex]
+        rotationPool[lastIndex] = tmp
+        lastIndex = lastIndex - 1
     end
 	
-    return uParam1, uParam2
+    return rotationPool, offsetPool
 end
 
-function CreateHerbsCoords(ScenarioPointCoords, f_4)
+function CreateHerbsCoords(ScenarioPointCoords, packedSlots)
 	local herbCoords = {}
 
     for index = 1, 4 do
-        local Offset, Rotation, uVar3 = GetRotationOffset(index, f_4)
+        local Offset, Rotation, variant = GetRotationOffset(index, packedSlots)
 		
-		if f_4[index] ~= nil then
+		if packedSlots[index] ~= nil then
 			herbCoords[index] = vector3(ScenarioPointCoords.x + ((Offset) * math.cos(math.rad(Rotation))),
 				ScenarioPointCoords.y + (Offset * math.sin(Rotation)),
 				ScenarioPointCoords.z)
@@ -341,22 +348,22 @@ function GetGroundZFor3DCoord(x, y, z)
     end
 end
 
-function GetRotationOffset(index, f_4)
-	local Rotation = 0
-	local Offset = 0
-	local uVar3 = 0
+function GetRotationOffset(slotIndex, packedSlots)
+	local packedValue = packedSlots[slotIndex]
+	
+	if packedValue == nil then
+        return 0, 0, 0
+    end
+	
+	local rotation = packedValue & 511
+    local offset   = (packedValue & 3584) >> 9
+    local variant  = (packedValue & 57344) >> 13
 
-	if f_4[index] ~= nil then
-		local Rotation = f_4[index] & 511
-		local Offset = (f_4[index] & 3584) >> 9
-		local uVar3 = (f_4[index] & 57344) >> 13
-		--print("f_4[index]=" .. f_4[index], "Offset=" .. Offset, "Rotation=" .. Rotation, "uVar3=" .. uVar3)
-		return Offset, Rotation, uVar3
-	end
+    return offset, rotation, variant
 end
 
 --function CreateComposite(uParam0, scenarioPointHeading)
-function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, f_4, pointCoords)
+function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, packedSlots, pointCoords)
     local compositeId = 0
 	local vegModifierHandle = 0
 	if index <= 4 then		
@@ -372,8 +379,8 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, f_4,
 				Heading = Heading * 0.01745329
                 herbCoords[index] = herbCoords[index] + correctCoords(vector3(0.0, 0.5, 1.81999), Heading)
             end
-			if f_4[index] ~= nil then
-				if f_4[index] & 4096 ~= 0 then
+			if packedSlots[index] ~= nil then
+				if packedSlots[index] & 4096 ~= 0 then
 					onGround = 1
 				end
 			end
@@ -460,22 +467,35 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 end
 
 function DeleteSound(coordsXY)
-	for key, value in pairs(PlaySoundCoords) do		
-		if key.xy == coordsXY then
-			stopSound(PlaySoundCoords[key])
-			PlaySoundCoords[key] = nil
+	--for key, value in pairs(PlaySoundCoordsTable) do		
+	--	if key.xy == coordsXY then
+	--		stopSound(PlaySoundCoordsTable[key])
+	--		PlaySoundCoordsTable[key] = nil
+	--	end
+	--end
+	local soundID = PlaySoundCoordsTable[coordsXY]
+	if soundID then
+		stopSound(soundID)
+		PlaySoundCoordsTable[coordsXY] = nil
+	end
+end
+--[[
+function DeleteEffect(coordsXY)
+	for key, value in pairs(PlayEffectCoordsTable) do		
+		if key == coordsXY and PlayEffectCoordsTable[key] then
+			if DoesParticleFxLoopedExist(PlayEffectCoordsTable[key]) then    -- DoesParticleFxLoopedExist
+                RemoveParticleFx(PlayEffectCoordsTable[key], false) -- RemoveParticleFx
+				PlayEffectCoordsTable[key] = nil
+            end
 		end
 	end
 end
-
+--]]
 function DeleteEffect(coordsXY)
-	for key, value in pairs(PlayEffectCoords) do		
-		if key == coordsXY and PlayEffectCoords[key] then
-			if DoesParticleFxLoopedExist(PlayEffectCoords[key]) then    -- DoesParticleFxLoopedExist
-                RemoveParticleFx(PlayEffectCoords[key], false) -- RemoveParticleFx
-				PlayEffectCoords[key] = nil
-            end
-		end
+	local effectID = PlayEffectCoordsTable[coordsXY]
+	if effectID and DoesParticleFxLoopedExist(effectID) then
+		RemoveParticleFx(effectID, false)
+		PlayEffectCoordsTable[coordsXY] = nil
 	end
 end
 
@@ -488,14 +508,12 @@ function playSound(pointCoords)--звук рядом с коллекционны
 	end
 	
 	local soundID = GetSoundId(Citizen.ResultAsInteger())
-	if soundID > 0 then
+	if soundID and soundID > 0 then
 		PlaySoundFromPositionWithId(soundID, "collectible_lure", pointCoords, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0, 0, true)
-		PlaySoundCoords[pointCoords] = soundID
+		PlaySoundCoordsTable[pointCoords.xy] = soundID
 	else
-		PlaySoundCoords[herbCoords] = nil
+		PlaySoundCoordsTable[pointCoords.xy] = nil
 	end
-	--	Citizen.InvokeNative(0xCCE219C922737BFA, "collectible_lure", herbCoords, "RDRO_Collectible_Sounds_Travelling_Saleswoman", true, 0, true, 0)
-	--end
 end
 
 function stopSound(soundID) --удаляет звук если расстояние больше 10 метров или если сорвали растение
@@ -539,8 +557,9 @@ CreateThread(function()
 				for _, scenarioData in ipairs(scenarios) do
 					local HerbID = scenarioData.herbsScenarioPoint.HerbID
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
+					--print("pointCoords = " .. json.encode(pointCoords))
 					local distance = #(playerPosition.xy - pointCoords.xy)
-					if Composite[pointCoords.xy] and not Config.FullLootedScenarioPoint[pointCoords.xy] then
+					if Composite[pointCoords.xy] and not Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] then
 						if isSPHerbs(HerbID) then
 							if distance <= 2.0 then
 								local pickTime = Config.AutoEquipKnife and equipKnife(HerbID) or getPickupTime(HerbID)
@@ -550,28 +569,27 @@ CreateThread(function()
 							end
 						end
 						--elseif isRareHerbs(HerbID) or isEggs(HerbID) then
-						if Config.Composites[HerbID].spawn.isUnique and not Config.FullLootedScenarioPoint[pointCoords.xy] then
-							if distance <= 20.0 and not PlaySoundCoords[pointCoords] then						
+						if Config.Composites[HerbID].spawn.isUnique and not Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] then
+							if distance <= 20.0 and not PlaySoundCoordsTable[pointCoords.xy] then						
 								playSound(pointCoords)
-							elseif distance > 20.0 and PlaySoundCoords[pointCoords] then
-								stopSound(PlaySoundCoords[pointCoords])
-								PlaySoundCoords[pointCoords] = nil
+							elseif distance > 20.0 and PlaySoundCoordsTable[pointCoords.xy] then
+								DeleteSound(pointCoords.xy)
 							end					
 						end
 					--если точка залутана и есть запись со звуком - удаляем звук
-					elseif Config.FullLootedScenarioPoint[pointCoords.xy] and PlaySoundCoords[pointCoords] then
-						stopSound(PlaySoundCoords[pointCoords])
-						PlaySoundCoords[pointCoords] = nil
+					elseif Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] and PlaySoundCoordsTable[pointCoords.xy] then
+						DeleteSound(pointCoords.xy)
 					end
 				end
 			end
 			--отключение звука при тп.
-			for key, value in pairs(PlaySoundCoords) do
-				local distance = #(playerPosition.xy - key.xy)
-				if distance > 20.0 and PlaySoundCoords[key] then
-					stopSound(PlaySoundCoords[key])
-					PlaySoundCoords[key] = nil
-				end	
+			for soundPointCoords, soundID in pairs(PlaySoundCoordsTable) do
+				if soundID then  -- ✓ Проверяем что soundID существует
+					local distance = #(playerPosition.xy - soundPointCoords)
+					if distance > 20.0 then
+						DeleteSound(soundPointCoords)
+					end
+				end
 			end
 		end
     end
@@ -702,17 +720,14 @@ function addEffectAndCheck(pointCoords, HerbID)
                             Citizen.InvokeNative(0xA10DB07FC234DD12, "eagle_eye")                 -- UseParticleFxAsset
                             current_ptfx_handle_id = Citizen.InvokeNative(0x8F90AB32E1944BDE, "eagle_eye_clue", foundEntities[2], 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.55, false, false, false) -- StartNetworkedParticleFxLoopedOnEntity
 							Citizen.InvokeNative(0x239879FC61C610CC, current_ptfx_handle_id, 255.0, 255.0, 0.0, false) --Color
-							PlayEffectCoords[pointCoords.xy] = current_ptfx_handle_id
+							PlayEffectCoordsTable[pointCoords.xy] = current_ptfx_handle_id
 							is_particle_effect_active = true
                         end
                     end
                 else
                     -- Eagle Eyes : OFF
                     if current_ptfx_handle_id then
-                        if Citizen.InvokeNative(0x9DD5AFF561E88F2A, current_ptfx_handle_id) then    -- DoesParticleFxLoopedExist
-                            Citizen.InvokeNative(0x459598F579C98929, current_ptfx_handle_id, false) -- RemoveParticleFx
-							PlayEffectCoords[pointCoords.xy] = nil
-                        end
+                        DeleteEffect(pointCoords.xy)
                     end
                     current_ptfx_handle_id = false
                     is_particle_effect_active = false
@@ -776,6 +791,9 @@ end
 function func_79(iParam1)
     return (f_4[iParam1 + 1] & 4096) ~= 0
 end
+function HasOnGroundFlag(packedSlots, slotIndex)
+    return (packedSlots[slotIndex] >> 1) & 4096 > 0
+end
 
 function IsControlAlwaysPressed(inputGroup, control)
     return IsControlPressed(inputGroup, control) or IsDisabledControlPressed(inputGroup, control)
@@ -810,13 +828,12 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				DeleteEffect(pointCoords.xy)				
 			end
 			--останавливаем звук и удаляем его запись
-			if PlaySoundCoords[pointCoords] then
-				stopSound(PlaySoundCoords[pointCoords])
-				PlaySoundCoords[pointCoords] = nil				
-			end			
-			
-			local CompositeAmount = GetHerbPicupAmountID(HerbID)			
-			
+			if PlaySoundCoordsTable[pointCoords.xy] then
+				DeleteSound(pointCoords.xy)
+			end
+
+			local CompositeAmount = GetHerbPicupAmountID(HerbID)
+
 			if lPickUp then
 				--мы собрали
 				if Config.Debug then
@@ -853,11 +870,11 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 			if not HerbsRemains(pointCoords.xy) then
 				SetScenarioPointActive(nearestScenario, false)					
 				--это по хорошему надо бы в DB закинуть. И при старте деактивировать все точки уже собранные.
-				Config.FullLootedScenarioPoint[pointCoords.xy] = nearestScenario
+				Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] = nearestScenario
 				if Config.Debug then
 					print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
 				end
-				TriggerServerEvent('rsg-composite:saveGatheredPoint', pointCoords.xy, nearestScenario)				
+				TriggerServerEvent('rsg-composite:server:saveGatheredPoint', KeyFromCoords(pointCoords.xy), nearestScenario)				
 			end
 		else
 			print("ERROR: No compositeIndex")
@@ -1309,7 +1326,7 @@ function GetSpawnCol(HerbID)
     end
 end
 
-function GetUnk1(HerbID)
+function GetVariantMax(HerbID)
     if HerbID == 43 then
         return 4
     else
@@ -2391,8 +2408,8 @@ function ResetComposites()
 		DeletePromptAndGroup(key)
 		Composite[key] = nil			
 	end
-	for key, value in pairs(Config.FullLootedScenarioPoint) do
-		SetScenarioPointActive(Config.FullLootedScenarioPoint[key], true)
+	for key, scenario in pairs(Config.FullLootedScenarioPoint) do
+		SetScenarioPointActive(scenario, true)
 		Config.FullLootedScenarioPoint[key] = nil
 	end
 	ClearPedTasksImmediately(ped, true, true)
@@ -2401,7 +2418,7 @@ end
 
 RegisterNetEvent("rsg-composite:client:GetServerComposite")
 AddEventHandler("rsg-composite:client:GetServerComposite", function(key, compositeTable)
-	StartCreateComposite(compositeTable.HerbID, compositeTable.CompositeHash, compositeTable.PointCoords, compositeTable.PointHeading, compositeTable.F_4)
+	StartCreateComposite(compositeTable.HerbID, compositeTable.CompositeHash, compositeTable.PointCoords, compositeTable.PointHeading, compositeTable.PackedSlots)
 end)
 
 
@@ -2417,6 +2434,10 @@ AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
 	ResetComposites()
 end)
 
+
+function KeyFromCoords(vec)
+    return string.format("%.3f:%.3f", vec.x, vec.y)
+end
 
 function GetHerbCompositeNumEntities(compositeId, searchNum)
 	local struct = DataView.ArrayBuffer(256)

@@ -2,73 +2,28 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local ServerComposite = {}
 local CompositeLoaded = false
---[[
-local toItem = {
-    [45] = "provision_wldflwr_agarita",
-    [2] = "consumable_herb_alaskan_ginseng",
-    [3] = "consumable_herb_american_ginseng",
-    [4] = "consumable_herb_bay_bolete",
-    [47] = "provision_wldflwr_bitterweed",
-    [5] = "consumable_herb_black_berry",
-    [6] = "consumable_herb_black_currant",
-    [48] = "provision_wldflwr_blood_flower",
-    [7] = "consumable_herb_burdock_root",
-    [49] = "provision_wldflwr_cardinal_flower",
-    [8] = "consumable_herb_chanterelles",
-    [50] = "provision_wldflwr_chocolate_daisy",
-    [11] = "consumable_herb_common_bulrush",
-    [51] = "provision_wldflwr_creek_plum",
-    [12] = "consumable_herb_creeping_thyme",
-    [13] = "consumable_herb_desert_sage",
-    [57] = "provision_duck_egg",
-    [15] = "consumable_herb_english_mace",
-    [16] = "consumable_herb_evergreen_huckleberry",
-    [18] = "consumable_herb_golden_currant",
-    [58] = "provision_goose_egg",
-	[44] = "consumable_herb_harrietum",
-    [19] = "consumable_herb_hummingbird_sage",
-    [20] = "consumable_herb_indian_tobacco",
-    [59] = "provision_loon_egg",
-    [23] = "consumable_herb_milkweed",
-    [26] = "consumable_herb_oleander_sage",
-    [1] = "provision_ro_flower_acunas_star",
-    [9] = "provision_ro_flower_cigar",
-    [10] = "provision_ro_flower_clamshell",
-    [14] = "provision_ro_flower_dragons",
-    [17] = "provision_ro_flower_ghost",
-    [21] = "provision_ro_flower_lady_of_night",
-    [22] = "provision_ro_flower_lady_slipper",
-    [24] = "provision_ro_flower_moccasin",
-    [25] = "provision_ro_flower_night_scented",
-    [30] = "provision_ro_flower_queens",
-    [32] = "provision_ro_flower_rat_tail",
-    [35] = "provision_ro_flower_sparrows",
-    [36] = "provision_ro_flower_spider",
-    [37] = "consumable_herb_vanilla_flower",
-    [27] = "consumable_herb_oregano",
-    [28] = "consumable_herb_parasol_mushroom",
-    [29] = "consumable_herb_prairie_poppy", -- 
-    [31] = "consumable_herb_rams_head", -- opio
-    [33] = "consumable_herb_red_raspberry",
-    [34] = "consumable_herb_red_sage",
-    [46] = "provision_wldflwr_texas_blue_bonnet",
-    [38] = "consumable_herb_violet_snowdrop",
-    [60] = "provision_vulture_egg",
-    [39] = "consumable_herb_wild_carrots",
-    [40] = "consumable_herb_wild_feverfew",
-    [41] = "consumable_herb_wild_mint",
-    [52] = "provision_wldflwr_wild_rhubarb",
-    [42] = "consumable_herb_wintergreen_berry",
-    [53] = "provision_wldflwr_wisteria",
-    [43] = "consumable_herb_yarrow",
-	
-	[54] = "provision_disco_gator_egg",
-	[55] = "provision_disco_gator_egg",
-	[56] = "provision_disco_gator_egg",
-	
-	[61] = "consumable_herb_saltbush"	
-}
---]]
+
+local function EnsureCompositesTable()
+    local sql = [[
+        CREATE TABLE IF NOT EXISTS player_composites (
+            id INT NOT NULL AUTO_INCREMENT,
+            citizenid VARCHAR(50) NOT NULL,
+            pointkey VARCHAR(32) NOT NULL,
+            scenario BIGINT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_citizen_point (citizenid, pointkey),
+            KEY idx_citizenid (citizenid)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]]
+    MySQL.Async.execute(sql, {})
+end
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    EnsureCompositesTable()
+end)
+
 -- Вставьте вместо него этот хелпер:
 local function GetCompositeData(herbID)
     return Config.Composites[herbID]
@@ -117,7 +72,6 @@ AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
 			Player.Functions.AddItem(item, amount) --amount количество
 			--TriggerClientEvent("rsg-inventory:client:ItemBox", _source, RSGCore.Shared.Items[item], "add")
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
-			print("data.item = " .. data.item)
 			local noticeString = ""
 			if amount > 1 then noticeString = amount .. "x " end
 			--TriggerClientEvent('rNotify:ShowAdvancedRightNotification', source, RSGCore.Shared.Items[item].label, "pm_collectors_bag_mp" , "provision_wldflwr_wild_rhubarb" , "COLOR_PURE_WHITE", 4000)
@@ -201,19 +155,17 @@ end)
 
 
 
-RegisterServerEvent('rsg-composite:saveGatheredPoint')
-AddEventHandler('rsg-composite:saveGatheredPoint', function(pointcoord, scenario)
-    local _source = source
-    local Player = RSGCore.Functions.GetPlayer(_source)
+RegisterServerEvent('rsg-composite:server:saveGatheredPoint')
+AddEventHandler('rsg-composite:server:saveGatheredPoint', function(pointkey, scenario)
+    local src = source
+    local Player = RSGCore.Functions.GetPlayer(src)
     local citizenid = Player.PlayerData.citizenid	
-	local datas = json.encode(pointcoord)
 
-    MySQL.Async.execute('INSERT INTO player_composites (citizenid, pointcoords, scenario) VALUES (@citizenid, @pointcoords, @scenario)',
-    {
-        ['@citizenid'] = citizenid,
-		['@pointcoords'] = datas,
-        ['@scenario'] = scenario
-    })
+	MySQL.Async.execute('INSERT INTO player_composites (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
+		['@citizenid'] = citizenid,
+		['@pointkey'] = pointkey,
+		['@scenario'] = scenario
+	})
 end)
 
 -- get plant
@@ -221,22 +173,25 @@ RSGCore.Functions.CreateCallback('rsg-composite:server:getPlayerComposites', fun
 	local playerId = source
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid
-	local result = MySQL.query.await('SELECT * FROM player_composites WHERE citizenid = @citizenid', {['@citizenid'] = citizenid})
+	--local result = MySQL.query.await('SELECT * FROM player_composites WHERE citizenid = @citizenid', {['@citizenid'] = citizenid})
+	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites WHERE citizenid = @citizenid', { 
+		['@citizenid'] = citizenid 
+	})
 
 	local FullLootedScenarioPoint = {}
-	if result[1] then		
+	if result[1] then
 		for i = 1, #result do
-			local bdpointcoords = json.decode(result[i].pointcoords)
-			local pointcoords = vector2(bdpointcoords.x, bdpointcoords.y)
+			local key = result[i].pointkey
 			local scenario = result[i].scenario
-			if pointcoords and scenario then			
-				FullLootedScenarioPoint[pointcoords] = scenario
-			else
-				print("Warning: Invalid pointcoords or scenario in database row")
+
+			if key and scenario then
+				FullLootedScenarioPoint[key] = scenario
 			end
 		end
 	end
-	print("Composite Data for " .. citizenid .. " uploaded successfully")
+	if Config.Debug then
+		print("Composite Data for " .. citizenid .. " uploaded successfully")
+	end
     cb(FullLootedScenarioPoint)
 end)
 

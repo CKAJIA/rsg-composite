@@ -7,6 +7,20 @@ local eventLoot = {PlCoords = nil, Model = nil}
 local spawnedScenariopoint = {}
 
 
+AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
+	Wait(1000)
+	RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
+		Config.FullLootedScenarioPoint = compositeData
+		playerSpawn = true	
+		startPointCheck()
+	end)	
+end)
+
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload')
+AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
+    playerSpawn = false
+end)
+
 function CreateScenarioPoints()
 	for index, herb in pairs(deleted_herbs) do
 		if not spawnedScenariopoint[index] then
@@ -29,21 +43,6 @@ end
 function CreateScenarioPointHash(scenarioHash, x, y, z, heading, radius, p6, bool_p7)
 	return Citizen.InvokeNative(0x94B745CE41DB58A1, scenarioHash, x, y, z, heading, radius, p6, bool_p7, Citizen.ResultAsInteger())
 end
-
-AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()	
-	Wait(1000)
-	RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
-		Config.FullLootedScenarioPoint = compositeData
-		local PlayerData = RSGCore.Functions.GetPlayerData()
-	end)	
-	playerSpawn = true	
-	startPointCheck()
-end)
-
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload')
-AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
-    playerSpawn = false
-end)
 
 function getLootScenarioHash(playerPosition, spawnRadius, buffSize, foundNums)
     local scenarios = {}

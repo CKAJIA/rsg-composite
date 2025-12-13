@@ -5,6 +5,8 @@ Config.Debug = true
 Config.AutoEquipKnife = false
 Config.UseArthurVomitAnimSceneForMen = true
 
+Config.PromtName = 'Взять'
+
 Config.composite_scenario = {
 
 	[2017118308] = {herbHesh = "COMPOSITE_LOOTABLE_AGARITA_DEF",  HerbID = 45},					--Магония
