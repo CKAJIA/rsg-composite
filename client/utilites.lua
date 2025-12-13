@@ -118,7 +118,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 	checkRecordAndClear(playerPosition)		
 	-- Проверка на день и ночь
 	local HOURS = GetClockHours()
-	if HOURS < 22 and HOURS >= 5 and Config.compositeOptionsSpawn[HerbID].isNightHerb then
+	if HOURS < 22 and HOURS >= 5 and Config.Composites[HerbID].spawn.isNightHerb then
 		--deleteComposite(&Var0);--если день то надо удалять эти растения
 		--очищаем запись потому что сейчас день и не надо создавать ночные растения
 		Composite[pointCoords.xy] = nil
@@ -170,13 +170,16 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		local HerbID = herbID
 		local compositeHash = joaat(hash)
 	
+		local spawnData = Config.Composites[HerbID] and Config.Composites[HerbID].spawn
+		if not spawnData then print("Error spawn data ID: " .. HerbID) return end
+		
 		local SpawnCol = GetSpawnCol(HerbID)	--Возращает кол-во сколько на точке(т.е. одинарные растения или нет)
 		local Unk1 = GetUnk1(HerbID)			--кроме 52(Тысячелистник) = 4 все остальное 0
 		--local MinCol = GetMinCol(HerbID)		--мин кол-во
 		--local MaxCol = GetMaxCol(HerbID)		--мах кол-во
 		--local SpawnCol = Config.compositeOptionsSpawn[HerbID].spawnCol
-		local MinCol = Config.compositeOptionsSpawn[HerbID].minCol
-		local MaxCol = Config.compositeOptionsSpawn[HerbID].maxCol
+		local MinCol = spawnData.minCol
+		local MaxCol = spawnData.maxCol
 						
 		if SpawnCol ~= 3 then--Это для заполнения всех растений кроме одиночных
 			f_4 = func_8(SpawnCol, MinCol, MaxCol, Unk1)
@@ -505,14 +508,14 @@ end
 
 function RareHerbs(HerbID, HerbCoords, pointCoords)
 	--if isRareHerbs(HerbID) then
-	if Config.compositeOptionsSpawn[HerbID].isUnique then
+	if Config.Composites[HerbID].spawn.isUnique then
 		local foundEntities = CreateVolumeAndGetEntity(HerbCoords, 0.5)
 		for _, entity in ipairs(foundEntities) do
 			if DoesEntityExist(entity) then
 				--if isRareHerbs(HerbID) then
 				--if Config.compositeOptionsSpawn[HerbID].isNightHerb then
 					Composite[pointCoords.xy].AttachEntity = entity
-					if Config.compositeOptionsSpawn[HerbID].isUnique then
+					if Config.Composites[HerbID].spawn.isUnique then
 						EagleEyeSetCustomEntityTint(entity, 255, 255, 0)
 					end
 				--end
@@ -547,7 +550,7 @@ CreateThread(function()
 							end
 						end
 						--elseif isRareHerbs(HerbID) or isEggs(HerbID) then
-						if Config.compositeOptionsSpawn[HerbID].isUnique and not Config.FullLootedScenarioPoint[pointCoords.xy] then
+						if Config.Composites[HerbID].spawn.isUnique and not Config.FullLootedScenarioPoint[pointCoords.xy] then
 							if distance <= 20.0 and not PlaySoundCoords[pointCoords] then						
 								playSound(pointCoords)
 							elseif distance > 20.0 and PlaySoundCoords[pointCoords] then
@@ -653,7 +656,7 @@ function SPHerbs(HerbID, herbCoords, pointCoords)
 			if DoesEntityExist(attachEntity) then
 				Composite[pointCoords.xy].AttachEntity = attachEntity
 				Composite[pointCoords.xy].Entitys = foundEntities
-				if Config.compositeOptionsSpawn[HerbID].isUnique then
+				if Config.Composites[HerbID].spawn.isUnique then
 					EagleEyeSetCustomEntityTint(attachEntity, 255, 255, 0)
 				end
 				
@@ -678,7 +681,7 @@ function addEffectAndCheck(pointCoords, HerbID)
 		
 	if DoesEntityExist(foundEntities[2]) then -- 2 индекс это яйца- их когда собрал то эффект пропадает потому что нет entiti
 		Composite[pointCoords.xy].AttachEntity = foundEntities[2]
-		if Config.compositeOptionsSpawn[HerbID].isUnique then
+		if Config.Composites[HerbID].spawn.isUnique then
 			EagleEyeSetCustomEntityTint(foundEntities[1], 255, 255, 0)
 		end
 		
@@ -800,7 +803,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 		if compositeIndex ~= nil then
 			local nearestCompositeId = Composite[pointCoords.xy].CompositeId[compositeIndex]
 			
-			if Config.compositeOptionsSpawn[HerbID].isUnique then
+			if Config.Composites[HerbID].spawn.isUnique then
 				--SetEntityAsMissionEntity(Composite[pointCoords.xy].AttachEntity, true, true)
 				--DeleteEntity(Composite[pointCoords.xy].AttachEntity)
 				Composite[pointCoords.xy].AttachEntity = nil
@@ -821,7 +824,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				end
 				TriggerServerEvent("rsg-composite:server:Gathered", HerbID, CompositeAmount)
 				--дополнительная награда
-				GiveAdditionalRewards(HerbID)
+				--GiveAdditionalRewards(HerbID)
 				--PlaySoundFrontend("Core_Fill_Up", "Consumption_Sounds", true, 0)
 			else
 				--мы съели
@@ -830,11 +833,12 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 				end
 				Eating(HerbID)
 				TriggerServerEvent("rsg-composite:server:Eating", HerbID)
-				if not Config.compositeOptionsEat[HerbID].isPoison then
+				if not Config.Composites[HerbID].eat.isPoison then
 					PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 				end
 			end
-			local herbType = GetHerbType(HerbID)
+			--local herbType = GetHerbType(HerbID)
+			local herbType = Config.Composites[HerbID].herbNameHash
 			if herbType ~= 0 then
 				TelemetryHerbPicked(herbType)
 				CompendiumHerbPicked(herbType, lPickupCoords)
@@ -862,8 +866,8 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 end
 
 function GiveAdditionalRewards(herbID)
-	if Config.compositeOptionsReward[herbID].addReward then
-		for _, reward in pairs(Config.compositeOptionsReward[herbID].addReward) do
+	if Config.Composites[herbID].rewards then
+		for _, reward in pairs(Config.Composites[herbID].rewards) do
 			local chance = reward.chance			
 			local randomChance = math.random(1, 100)
 			if randomChance <= chance then
@@ -931,7 +935,8 @@ function HerbsRemains(nearestScenarioPointIndex)
 end
 
 function Eating(herbID)
-	local Options = Config.compositeOptionsEat[herbID]
+	--local Options = Config.compositeOptionsEat[herbID]
+	local Options = Config.Composites[herbID].eat
 	if Options then
 		local player = PlayerPedId()
 		if Options.param then
@@ -954,7 +959,7 @@ function Eating(herbID)
 	end
 end
 
-RegisterNetEvent("rsg-composite:server:Eating", function(herbID, itemName)
+RegisterNetEvent("rsg-composite:client:Eating", function(herbID, itemName)
     if isBusy then
         return
     else
@@ -969,7 +974,7 @@ RegisterNetEvent("rsg-composite:server:Eating", function(herbID, itemName)
         Eating(herbID)
 		TriggerServerEvent("rsg-composite:server:Eating", herbID)
 		TriggerEvent("rsg-inventory:client:ItemBox", RSGCore.Shared.Items[itemName], "remove")
-		if not Config.compositeOptionsEat[herbID].isPoison then
+		if not Config.Composites[herbID].eat.isPoison then
 			PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
 		end
         ClearPedTasks(PlayerPedId())
@@ -1473,135 +1478,12 @@ function GetHerbIDFromLootedModel(Model)
 end
 
 function GetHerbPicupAmountID(HerbID)
-	if HerbID == 2 then
-        return 1
-    elseif HerbID == 3 then
-        return 1
-    elseif HerbID == 4 then
-        return 1
-    elseif HerbID == 5 then
-        return 1
-    elseif HerbID == 6 then
-        return 1
-    elseif HerbID == 7 then
-        return 1
-    elseif HerbID == 8 then
-        return 1
-    elseif HerbID == 11 then
-        return 1
-    elseif HerbID == 12 then
-        return 1
-    elseif HerbID == 13 then
-        return 1
-    elseif HerbID == 15 then
-        return 1
-    elseif HerbID == 16 then
-        return 1
-    elseif HerbID == 18 then
-        return 1
-    elseif HerbID == 19 then
-        return 1
-    elseif HerbID == 20 then
-        return 1
-    elseif HerbID == 23 then
-        return 1
-    elseif HerbID == 26 then
-        return 1
-    elseif HerbID == 27 then
-        return 1
-    elseif HerbID == 28 then
-        return 1
-    elseif HerbID == 29 then
-        return 1
-    elseif HerbID == 31 then
-        return 1
-    elseif HerbID == 33 then
-        return 1
-    elseif HerbID == 34 then
-        return 1
-    elseif HerbID == 37 then
-        return 1
-    elseif HerbID == 38 then
-        return 1
-    elseif HerbID == 39 then
-        return 1
-    elseif HerbID == 40 then
-        return 1
-    elseif HerbID == 41 then
-        return 1
-    elseif HerbID == 42 then
-        return 1
-    elseif HerbID == 43 then
-        return 1
-    elseif HerbID == 1 then
-        return 1
-    elseif HerbID == 9 then
-        return 1
-    elseif HerbID == 10 then
-        return 1
-    elseif HerbID == 14 then
-        return 1
-    elseif HerbID == 17 then
-        return 1
-    elseif HerbID == 21 then
-        return 1
-    elseif HerbID == 22 then
-        return 1
-    elseif HerbID == 24 then
-        return 1
-    elseif HerbID == 25 then
-        return 1
-    elseif HerbID == 30 then
-        return 1
-    elseif HerbID == 32 then
-        return 1
-    elseif HerbID == 35 then
-        return 1
-    elseif HerbID == 36 then
-        return 1
-	
-	elseif HerbID == 44 then
-        return 1
-	elseif HerbID == 45 then
-        return 1
-	elseif HerbID == 46 then
-        return 1
-	elseif HerbID == 47 then
-        return 1
-	elseif HerbID == 48 then
-        return 1
-	elseif HerbID == 49 then
-        return 1
-	elseif HerbID == 50 then
-        return 1
-	elseif HerbID == 51 then
-        return 1
-	elseif HerbID == 52 then
-        return 1
-	elseif HerbID == 53 then
-        return 1
-		
-	elseif HerbID == 54 then
-        return 3
-	elseif HerbID == 55 then
-        return 4
-	elseif HerbID == 56 then
-        return 5
-	elseif HerbID == 57 then
-        return 5
-	elseif HerbID == 58 then
-        return 4
-	elseif HerbID == 59 then
-        return 3
-	elseif HerbID == 60 then
-        return 1
-	elseif HerbID == 61 then
-        return 1
-
-		
+	local data = Config.Composites[HerbID]
+	if data and data.pickupAmount then
+		return data.pickupAmount
 	else
-        return 1
-    end
+		return 1
+	end
 end
 
 
@@ -1620,7 +1502,7 @@ end
 
 
 
-
+--[[
 
 function GetHerbPicupAmount(CompositeHash)
 	if CompositeHash == "COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_INTERACTABLE_DEF" then
@@ -1751,7 +1633,7 @@ function GetHerbPicupAmount(CompositeHash)
         return 1
     end
 end
-
+--]]
 function RequestAndWaitForComposite(compositeHash)
     Citizen.InvokeNative(0x73F0D0327BFA0812, compositeHash)  -- request COMPOSITE
 	
@@ -1790,7 +1672,7 @@ end
 function NativeDeleteComposite(compositeId)
     Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, false)
 end
-
+--[[
 function GetHerbType(HerbID)
 	if HerbID == 2 then
 		return `HERB_ALASKAN_GINSENG`
@@ -1898,7 +1780,7 @@ function GetHerbType(HerbID)
         return `HERB_WILD_FLWR_RHUBARB`
 	elseif HerbID == 53 then
         return `HERB_WILD_FLWR_WISTERIA`
-
+--]]
 	
 	--[[
 	--Яйца
@@ -1924,10 +1806,12 @@ function GetHerbType(HerbID)
 	elseif hash == joaat("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
         return 62
 	--]]	
+--[[
     else
         return 0
     end
 end
+--]]
 
 --[[
 function createAnimScene(entity)

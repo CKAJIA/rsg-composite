@@ -75,275 +75,485 @@ Config.composite_scenario = {
 	--  -- ???????	["LOOTABLE_COMPOSITE_ENTITY_DEF"] -- 0x875F0853
 }
 
-Config.compositeOptionsSpawn = {
-	--some composite ones appear only one per point
-	--minCol - must be less than or equal to maxCol(1 - 3)
-	--maxCol - must be greater than or equal to minCol(no more than 4)
-	--isUnique - it should be applied only to single composites
-	--all orchid and collections is single
-	[1]  = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Звезда Акуньи"
-	[2]  = { minCol = 1, maxCol = 1 },	--Аляскинский женьшень
-	[3]  = { minCol = 1, maxCol = 1 },	--Американский женьшень
-	[4]  = { minCol = 2, maxCol = 4 },	--Польский гриб	
-	[5]  = { minCol = 1, maxCol = 1 },	--Ежевика
-	[6]  = { minCol = 2, maxCol = 3 },	--Черная смородина
-	[7]  = { minCol = 2, maxCol = 2 },	--Корень лопуха
-	[8]  = { minCol = 2, maxCol = 4 },	--Лисички
-	[9]  = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея-сигара
-	[10] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея-ракушка
-	[11] = { minCol = 3, maxCol = 4 },	--Камыш обыкновенный
-	[12] = { minCol = 3, maxCol = 4 },	--Тимьян ползучий
-	[13] = { minCol = 2, maxCol = 2 },	--Пустынный шалфей
-	[14] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Пасть дракона"
-	[15] = { minCol = 2, maxCol = 3 },	--Тысячелистник агератумный
-	[16] = { minCol = 1, maxCol = 1 },	--Черника овальнолистная
-	[17] = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },	--Орхидея-призрак
-	[18] = { minCol = 2, maxCol = 2 },	--Смородина золотистая
-	[19] = { minCol = 2, maxCol = 3 },	--Шалфей покрывальцевый
-	[20] = { minCol = 2, maxCol = 3 },	--Индейский табак
-	[21] = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },	--Орхидея "Леди ночи"
-	[22] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Венерин башмачок"
-	[23] = { minCol = 2, maxCol = 3 },	--Молочай
-	[24] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Желтый башмачок"
-	[25] = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },	--Орхидея "Аромат ночи"
-	[26] = { minCol = 2, maxCol = 2 },	--Олеандр
-	[27] = { minCol = 2, maxCol = 3 },	--Душица
-	[28] = { minCol = 2, maxCol = 4 },	--Гриб-зонтик
-	[29] = { minCol = 2, maxCol = 3 },	--Пустынный мак
-	[30] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Голубая Леди"
-	[31] = { minCol = 2, maxCol = 4 },	--Гриб-баран
-	[32] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Крысиный хвост"
-	[33] = { minCol = 1, maxCol = 1 },	--Малина
-	[34] = { minCol = 2, maxCol = 3 },	--Красный шалфей
-	[35] = { minCol = 1, maxCol = 1, isUnique = true },	--Орхидея "Воробьиный башмачок"
-	[36] = { minCol = 1, maxCol = 1, isUnique = true },	--Паучья орхидея
-	[37] = { minCol = 1, maxCol = 1 },	--Цветок ванили
-	[38] = { minCol = 2, maxCol = 3 },	--Фиолетовый подснежник
-	[39] = { minCol = 2, maxCol = 3 },	--Дикая морковь
-	[40] = { minCol = 2, maxCol = 3 },	--Дикий пиретрум
-	[41] = { minCol = 2, maxCol = 3 },	--Мята
-	[42] = { minCol = 1, maxCol = 2 },	--Гаультерия
-	[43] = { minCol = 2, maxCol = 3 },	--Тысячелистник
-	[44] = { minCol = 1, maxCol = 1, isUnique = true },	--Гариетум лекарственный
-	[45] = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },	--Магония
-	[46] = { minCol = 1, maxCol = 1, isUnique = true },	--Люпин техасский
-	[47] = { minCol = 1, maxCol = 1, isUnique = true },	--Гелениум
-	[48] = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },	--Ваточник
-	[49] = { minCol = 1, maxCol = 1, isUnique = true },	--Лоберия пурпурная
-	[50] = { minCol = 1, maxCol = 1, isUnique = true },	--Барландиера
-	[51] = { minCol = 1, maxCol = 1, isUnique = true },	--Слива поручейная
-	[52] = { minCol = 1, maxCol = 1, isUnique = true },	--Ревень
-	[53] = { minCol = 1, maxCol = 1, isUnique = true },	--Глициния
-	[54] = { minCol = 1, maxCol = 1, isUnique = true },	--Яйца алигатора(3шт)
-	[55] = { minCol = 1, maxCol = 1, isUnique = true },	--Яйца алигатора(4шт)
-	[56] = { minCol = 1, maxCol = 1, isUnique = true },	--Яйца алигатора(5шт)
-	[57] = { minCol = 1, maxCol = 1, isUnique = true },	--Утинные яйца
-	[58] = { minCol = 1, maxCol = 1, isUnique = true },	--Гусинные яйца
-	[59] = { minCol = 1, maxCol = 1, isUnique = true },	--Яйца гагары
-	[60] = { minCol = 1, maxCol = 1, isUnique = true },	--Яйцо грифа(вместе с пеньком)
-	[61] = { minCol = 2, maxCol = 3 },	--Лук виноградничный
-	[62] = { minCol = 2, maxCol = 3 },	--Лебеда
+Config.Composites = {
+    [1] = { --Орхидея "Звезда Акуньи"+
+        item = "provision_ro_flower_acunas_star",
+		herbNameHash = `HERB_ACUNAS_STAR_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [2] = { --Аляскинский женьшень
+        item = "consumable_herb_alaskan_ginseng",
+		herbNameHash = `HERB_ALASKAN_GINSENG`,
+        spawn = { minCol = 1, maxCol = 1 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Health = {Min = 100, Max = 200}, 
+				Stamina = {Min = 25, Max = 45}, 
+				Hunger = {Min = 5, Max = 10}, 
+				Thirst = {Min = 5, Max = 10}, 
+				Clean = {Min = 45, Max = 50}, 
+				Stress = {Min = -10, Max = -15} 
+			} 
+		},
+    },
+    [3] = { --Американский женьшень
+        item = "consumable_herb_american_ginseng",
+		herbNameHash = `HERB_AMERICAN_GINSENG`,
+        spawn = { minCol = 1, maxCol = 1 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Health = {Min = 100, Max = 200}, 
+				Stamina = {Min = 25, Max = 45}, 
+				Hunger = {Min = 5, Max = 10}, 
+				Thirst = {Min = 5, Max = 10}, 
+				Clean = {Min = 45, Max = 50}, 
+				Stress = {Min = -10, Max = -15}
+			} 
+		},
+    },
+    [4] = { --Польский гриб
+        item = "consumable_herb_bay_bolete",
+		herbNameHash = `HERB_BAY_BOLETE`,
+        spawn = { minCol = 2, maxCol = 4 },
+        eat = { isPoison = false },
+    },
+    [5] = { --Ежевика
+        item = "consumable_herb_black_berry",
+		herbNameHash = `HERB_BLACK_BERRY`,
+        spawn = { minCol = 1, maxCol = 1 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Hunger = {Min = 1, Max = 5}, 
+				Thirst = {Min = 10, Max = 15}, 
+				Clean = {Min = -1, Max = -5} 
+			} 
+		},
+    },
+    [6] = { --Черная смородина
+        item = "consumable_herb_black_currant",
+		herbNameHash = `HERB_BLACK_CURRANT`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { 
+			isPoison = false, 
+			param = {
+				Hunger = {Min = 1, Max = 5}, 
+				Thirst = {Min = 10, Max = 15}, 
+				Clean = {Min = -1, Max = -5}
+			} 
+		},
+    },
+    [7] = { --Корень лопуха
+        item = "consumable_herb_burdock_root",
+		herbNameHash = `HERB_BURDOCK_ROOT`,
+        spawn = { minCol = 2, maxCol = 2 },
+        eat = { isPoison = false },
+    },
+    [8] = { --Лисички
+        item = "consumable_herb_chanterelles",
+		herbNameHash = `HERB_CHANTERELLES`,
+        spawn = { minCol = 2, maxCol = 4 },
+        eat = { isPoison = false },
+    },
+    [9] = { --Орхидея-сигара+
+        item = "provision_ro_flower_cigar",
+		herbNameHash = `HERB_CIGAR_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [10] = { --Орхидея-ракушка+
+        item = "provision_ro_flower_clamshell",
+		herbNameHash = `HERB_CLAMSHELL_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [11] = { --Камыш обыкновенный
+        item = "consumable_herb_common_bulrush",
+		herbNameHash = `HERB_COMMON_BULRUSH`,
+        spawn = { minCol = 3, maxCol = 4 },
+        eat = { 
+			isPoison = true, 
+			param = { 
+				Health = {Min = -100, Max = -200}, 
+				Stamina = {Min = -25, Max = -45}, 
+				Hunger = {Min = -10, Max = -20}, 
+				Thirst = {Min = -15, Max = -30}, 
+				Clean = {Min = -5, Max = -10}, 
+				Stress = {Min = 5, Max = 15}
+			}
+		},
+    },
+    [12] = { --Тимьян ползучий
+        item = "consumable_herb_creeping_thyme",
+		herbNameHash = `HERB_CREEPING_THYME`,
+        spawn = { minCol = 3, maxCol = 4 },
+        eat = { isPoison = false },
+    },
+    [13] = { --Пустынный шалфей
+        item = "consumable_herb_desert_sage",
+		herbNameHash = `HERB_DESERT_SAGE`,
+        spawn = { minCol = 2, maxCol = 2 },
+        eat = { isPoison = false },
+    },
+    [14] = { --Орхидея "Пасть дракона"+
+        item = "provision_ro_flower_dragons",
+		herbNameHash = `HERB_DRAGONS_MOUTH_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [15] = { --Тысячелистник агератумный
+        item = "consumable_herb_english_mace",
+		herbNameHash = `HERB_ENGLISH_MACE`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [16] = { --Черника овальнолистная
+        item = "consumable_herb_evergreen_huckleberry",
+		herbNameHash = `HERB_EVERGREEN_HUCKLEBERRY`,
+        spawn = { minCol = 1, maxCol = 1 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Hunger = {Min = 1, Max = 5}, 
+				Thirst = {Min = 10, Max = 15},
+				Clean = {Min = -1, Max = -5}
+			}
+		},
+    },
+    [17] = { --Орхидея-призрак+
+        item = "provision_ro_flower_ghost",
+		herbNameHash = `HERB_GHOST_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },
+		eat = { isPoison = false },
+    },
+    [18] = { --Смородина золотистая
+        item = "consumable_herb_golden_currant",
+		herbNameHash = `HERB_GOLDEN_CURRANT`,
+        spawn = { minCol = 2, maxCol = 2 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Hunger = {Min = 1, Max = 5}, 
+				Thirst = {Min = 10, Max = 15}, 
+				Clean = {Min = -1, Max = -5}
+			}
+		},
+    },
+    [19] = { --Шалфей покрывальцевый
+        item = "consumable_herb_hummingbird_sage",
+		herbNameHash = `HERB_HUMMINGBIRD_SAGE`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [20] = { --Индейский табак
+        item = "consumable_herb_indian_tobacco",
+		herbNameHash = `HERB_INDIAN_TOBACCO`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = true },
+        rewards = { 
+			{chance = 25, item = 'bread', amountMin = 1, amountMax = 3}
+		},
+    },
+    [21] = { --Орхидея "Леди ночи"+
+        item = "provision_ro_flower_lady_of_night",
+		herbNameHash = `HERB_LADY_OF_NIGHT_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },
+		eat = { isPoison = false },
+    },
+    [22] = { --Орхидея "Венерин башмачок"+
+        item = "provision_ro_flower_lady_slipper",
+		herbNameHash = `HERB_LADY_SLIPPER_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [23] = { --Молочай
+        item = "consumable_herb_milkweed",
+        spawn = { minCol = 2, maxCol = 3 },
+		herbNameHash = `HERB_MILKWEED`,
+        eat = { 
+			isPoison = false,
+			param = { 
+				Health = {Min = 25, Max = 35},
+				Stamina = {Min = 5, Max = 15},
+				Hunger = {Min = 5, Max = 10},
+				Thirst = {Min = -5, Max = -10},
+				Clean = {Min = -5, Max = -10}
+			}
+		},
+    },
+    [24] = { --Орхидея "Желтый башмачок"+
+        item = "provision_ro_flower_moccasin",
+		herbNameHash = `HERB_MOCCASIN_FLOWER_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [25] = { --Орхидея "Аромат ночи"+
+        item = "provision_ro_flower_night_scented",
+		herbNameHash = `HERB_NIGHT_SCENTED_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },
+		eat = { isPoison = false },
+    },
+    [26] = { --Олеандр
+        item = "consumable_herb_oleander_sage",
+		herbNameHash = `HERB_OLEANDER_SAGE`,
+        spawn = { minCol = 2, maxCol = 2 },
+        eat = { 
+			isPoison = true, 
+			param = { 
+				Stress = {Min = 5, Max = 15}, 
+				Health = {Min = -100.0, Max = -200}, 
+				Stamina = {Min = -25, Max = -45}, 
+				Hunger = {Min = -10, Max = -20}, 
+				Thirst = {Min = -15, Max = -30}, 
+				Clean = {Min = -5, Max = -10}
+			}
+		},
+    },
+    [27] = { --Душица
+        item = "consumable_herb_oregano",
+		herbNameHash = `HERB_OREGANO`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [28] = { --Гриб-зонтик
+        item = "consumable_herb_parasol_mushroom",
+		herbNameHash = `HERB_PARASOL_MUSHROOM`,
+        spawn = { minCol = 2, maxCol = 4 },
+        eat = { isPoison = false },
+    },
+    [29] = { --Пустынный мак
+        item = "consumable_herb_prairie_poppy",
+		herbNameHash = `HERB_PRAIRIE_POPPY`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [30] = { --Орхидея "Голубая Леди"
+        item = "provision_ro_flower_queens",
+		herbNameHash = `HERB_QUEENS_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [31] = { --Гриб-баран
+        item = "consumable_herb_rams_head",
+		herbNameHash = `HERB_RAMS_HEAD`,
+        spawn = { minCol = 2, maxCol = 4 },
+        eat = { isPoison = false },
+    },
+    [32] = { --Орхидея "Крысиный хвост"+
+        item = "provision_ro_flower_rat_tail",
+		herbNameHash = `HERB_RAT_TAIL_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [33] = { --Малина
+        item = "consumable_herb_red_raspberry",
+		herbNameHash = `HERB_RED_RASPBERRY`,
+        spawn = { minCol = 1, maxCol = 1 },
+        eat = { 
+			isPoison = false, 
+			param = { 
+				Hunger = {Min = 1, Max = 5}, 
+				Thirst = {Min = 10, Max = 15}, 
+				Clean = {Min = -1, Max = -5}
+			}
+		},
+        rewards = {
+			{chance = 50, item = 'water', amountMin = 1, amountMax = 1}
+		},
+    },
+    [34] = { --Красный шалфей
+        item = "consumable_herb_red_sage",
+		herbNameHash = `HERB_RED_SAGE`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [35] = { --Орхидея "Воробьиный башмачок"
+        item = "provision_ro_flower_sparrows",
+		herbNameHash = `HERB_SPARROWS_EGG_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [36] = { --Паучья орхидея+
+        item = "provision_ro_flower_spider",
+		herbNameHash = `HERB_SPIDER_ORCHID`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [37] = { --Цветок ванили
+        item = "consumable_herb_vanilla_flower",
+		herbNameHash = `HERB_VANILLA_FLOWER`,
+        spawn = { minCol = 1, maxCol = 1 },
+		eat = { isPoison = false },
+    },
+    [38] = { --Фиолетовый подснежник
+        item = "consumable_herb_violet_snowdrop",
+		herbNameHash = `HERB_VIOLET_SNOWDROP`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [39] = { --Дикая морковь
+        item = "consumable_herb_wild_carrots",
+		herbNameHash = `HERB_WILD_CARROTS`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { 
+			isPoison = false, 
+			use = false, 
+			param = { 
+				Health = {Min = 15.0, Max = 20.0}, 
+				Hunger = {Min = 5.0, Max = 15.0}
+			}
+		},
+        rewards = { 
+			{chance = 25, item = 'stew', amountMin = 1, amountMax = 3}
+		},
+    },
+    [40] = { --Дикий пиретрум
+        item = "consumable_herb_wild_feverfew",
+		herbNameHash = `HERB_WILD_FEVERFEW`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [41] = { --Мята
+        item = "consumable_herb_wild_mint",
+		herbNameHash = `HERB_WILD_MINT`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [42] = { --Гаультерия
+        item = "consumable_herb_wintergreen_berry",
+		herbNameHash = `HERB_WINTERGREEN_BERRY`,
+        spawn = { minCol = 1, maxCol = 2 },
+        eat = { isPoison = false },
+    },
+    [43] = { --Тысячелистник
+        item = "consumable_herb_yarrow",
+		herbNameHash = `HERB_YARROW`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [44] = { --Гариетум лекарственный
+        item = "consumable_herb_harrietum",
+		herbNameHash = `HERB_HARRIETUM_OFFICINALIS`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [45] = { --Магония
+        item = "provision_wldflwr_agarita",
+		herbNameHash = `HERB_WILD_FLWR_AGARITA`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },
+		eat = { isPoison = false },
+    },
+    [46] = { --Люпин техасский
+        item = "provision_wldflwr_texas_blue_bonnet",
+		herbNameHash = `HERB_WILD_FLWR_BLUE_BONNET`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [47] = { --Гелениум
+        item = "provision_wldflwr_bitterweed",
+		herbNameHash = `HERB_WILD_FLWR_BITTERWEED`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [48] = { --Ваточник
+        item = "provision_wldflwr_blood_flower",
+		herbNameHash = `HERB_WILD_FLWR_BLOOD_FLOWER`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true, isNightHerb = true },
+		eat = { isPoison = false },
+    },
+    [49] = { --Лоберия пурпурная
+        item = "provision_wldflwr_cardinal_flower",
+		herbNameHash = `HERB_WILD_FLWR_CARDINAL_FLOWER`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [50] = { --Барландиера
+        item = "provision_wldflwr_chocolate_daisy",
+		herbNameHash = `HERB_WILD_FLWR_CHOCOLATE_DAISY`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [51] = { --Слива поручейная
+        item = "provision_wldflwr_creek_plum",
+		herbNameHash = `HERB_WILD_FLWR_CREEK_PLUM`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [52] = { --Ревень
+        item = "provision_wldflwr_wild_rhubarb",
+		herbNameHash = `HERB_WILD_FLWR_RHUBARB`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [53] = { --Глициния
+        item = "provision_wldflwr_wisteria",
+		herbNameHash = `HERB_WILD_FLWR_WISTERIA`,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [54] = { --Яйца алигатора(3шт)
+        item = "provision_disco_gator_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 3,
+    },
+    [55] = { --Яйца алигатора(4шт)
+        item = "provision_disco_gator_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 4,
+    },
+    [56] = { --Яйца алигатора(5шт)
+        item = "provision_disco_gator_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 5,
+    },
+    [57] = { --Утинные яйца
+        item = "provision_duck_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 5,
+    },
+    [58] = { --Гусинные яйца
+        item = "provision_goose_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 4,
+    },
+    [59] = { --Яйца гагары
+        item = "provision_loon_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+		pickupAmount = 3,
+    },
+    [60] = { --Яйцо грифа(вместе с пеньком)
+        item = "provision_vulture_egg",
+		herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+		eat = { isPoison = false },
+    },
+    [61] = { --Лук виноградничный
+        item = "consumable_herb_saltbush",
+		herbNameHash = `COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF`,
+        spawn = { minCol = 2, maxCol = 3 },
+        eat = { isPoison = false },
+    },
+    [62] = { --Лебеда
+        item = "",
+		herbNameHash = `COMPOSITE_LOOTABLE_SALTBUSH_DEF`,
+        spawn = { minCol = 2, maxCol = 3 },
+		eat = { isPoison = true },
+    },
 }
 
-Config.compositeOptionsReward = {
 
-	[1]  = {  },	--Орхидея "Звезда Акуньи"
-	[2]  = {  },	--Аляскинский женьшень
-	[3]  = {  },	--Американский женьшень
-	[4]  = {  },	--Польский гриб	
-	[5]  = {  },	--Ежевика
-	[6]  = {  },	--Черная смородина
-	[7]  = {  },	--Корень лопуха
-	[8]  = {  },	--Лисички
-	[9]  = {  },	--Орхидея-сигара
-	[10] = {  },	--Орхидея-ракушка
-	[11] = {  },	--Камыш обыкновенный
-	[12] = {  },	--Тимьян ползучий
-	[13] = {  },	--Пустынный шалфей
-	[14] = {  },	--Орхидея "Пасть дракона"
-	[15] = {  },	--Тысячелистник агератумный
-	[16] = {  },	--Черника овальнолистная
-	[17] = {  },	--Орхидея-призрак
-	[18] = {  },	--Смородина золотистая
-	[19] = {  },	--Шалфей покрывальцевый
-	[20] = { addReward = {{chance = 25, item = 'bread', amountMin = 1, amountMax = 3}} },	--Индейский табак
-	[21] = {  },	--Орхидея "Леди ночи"
-	[22] = {  },	--Орхидея "Венерин башмачок"
-	[23] = {  },	--Молочай
-	[24] = {  },	--Орхидея "Желтый башмачок"
-	[25] = {  },	--Орхидея "Аромат ночи"
-	[26] = {  },	--Олеандр
-	[27] = {  },	--Душица
-	[28] = {  },	--Гриб-зонтик
-	[29] = {  },	--Пустынный мак
-	[30] = {  },	--Орхидея "Голубая Леди"
-	[31] = {  },	--Гриб-баран
-	[32] = {  },	--Орхидея "Крысиный хвост"
-	[33] = { addReward = {{chance = 50, item = 'water', amountMin = 1, amountMax = 1}} },	--Малина
-	[34] = {  },	--Красный шалфей
-	[35] = {  },	--Орхидея "Воробьиный башмачок"
-	[36] = {  },	--Паучья орхидея
-	[37] = {  },	--Цветок ванили
-	[38] = {  },	--Фиолетовый подснежник
-	[39] = { addReward = {{chance = 25, item = 'stew', amountMin = 1, amountMax = 3}} },	--Дикая морковь
-	[40] = {  },	--Дикий пиретрум
-	[41] = {  },	--Мята
-	[42] = {  },	--Гаультерия
-	[43] = {  },	--Тысячелистник
-	[44] = {  },	--Гариетум лекарственный
-	[45] = {  },	--Магония
-	[46] = {  },	--Люпин техасский
-	[47] = {  },	--Гелениум
-	[48] = {  },	--Ваточник
-	[49] = {  },	--Лоберия пурпурная
-	[50] = {  },	--Барландиера
-	[51] = {  },	--Слива поручейная
-	[52] = {  },	--Ревень
-	[53] = {  },	--Глициния
-	[54] = {  },	--Яйца алигатора(3шт)
-	[55] = {  },	--Яйца алигатора(4шт)
-	[56] = {  },	--Яйца алигатора(5шт)
-	[57] = {  },	--Утинные яйца
-	[58] = {  },	--Гусинные яйца
-	[59] = {  },	--Яйца гагары
-	[60] = {  },	--Яйцо грифа(вместе с пеньком)
-	[61] = {  },	--Лук виноградничный
-	[62] = {  },	--Лебеда
-}
-
-Config.compositeOptionsEat = {
-	[2]  = { --Аляскинский женьшень
-				isPoison = false,
-				item = "consumable_herb_alaskan_ginseng",
-				param = {
-					Health = {Min = 100, Max = 200},
-					Stamina = {Min = 25, Max = 45},
-					Hunger = {Min = 5, Max = 10},
-					Thirst = {Min = 5, Max = 10},
-					Clean = {Min = 45, Max = 50},
-					Stress = {Min = -10, Max = -15},
-				},
-			},
-	[3]  = { --Американский женьшень
-				isPoison = false,
-				item = "consumable_herb_american_ginseng",
-				param = {
-					Health = {Min = 100, Max = 200},
-					Stamina = {Min = 25, Max = 45},
-					Hunger = {Min = 5, Max = 10},
-					Thirst = {Min = 5, Max = 10},
-					Clean = {Min = 45, Max = 50},
-					Stress = {Min = -10, Max = -15},
-				},
-			},
-	[4]  = { isPoison = false, item = "consumable_herb_bay_bolete" },	--Польский гриб
-	[5]  = { --Ежевика
-				isPoison = false,
-				item = "consumable_herb_black_berry",
-				param = {
-					Hunger = {Min = 1, Max = 5},
-					Thirst = {Min = 10, Max = 15},
-					Clean = {Min = -1, Max = -5},
-				},
-			},
-	[6]  = { --Черная смородина
-				isPoison = false,
-				item = "consumable_herb_black_currant",
-				param = {
-					Hunger = {Min = 1, Max = 5},
-					Thirst = {Min = 10, Max = 15},
-					Clean = {Min = -1, Max = -5},
-				},
-			},
-	[7]  = { isPoison = false, item = "consumable_herb_burdock_root" },	--Корень лопуха
-	[8]  = { isPoison = false, item = "consumable_herb_chanterelles" },	--Лисички
-	[11] = { --Камыш обыкновенный
-				isPoison = true,
-				item = "consumable_herb_common_bulrush",
-				param = {					
-					Health = {Min = -100, Max = -200},
-					Stamina = {Min = -25, Max = -45},
-					Hunger = {Min = -10, Max = -20},
-					Thirst = {Min = -15, Max = -30},
-					Clean = {Min = -5, Max = -10},
-					Stress = {Min = 5, Max = 15}
-				},
-			},
-	[12] = { isPoison = false, item = "consumable_herb_creeping_thyme" },	--Тимьян ползучий
-	[13] = { isPoison = false, item = "consumable_herb_desert_sage" },	--Пустынный шалфей
-	[15] = { isPoison = false, item = "consumable_herb_english_mace" },	--Тысячелистник агератумный
-	[16] = { --Черника овальнолистная
-				isPoison = false,
-				item = "consumable_herb_evergreen_huckleberry",
-				param = {
-					Hunger = {Min = 1, Max = 5},
-					Thirst = {Min = 10, Max = 15},
-					Clean = {Min = -1, Max = -5},
-				},
-			},
-	[18] = { --Смородина золотистая
-				isPoison = false,
-				item = "consumable_herb_golden_currant",
-				param = {
-					Hunger = {Min = 1, Max = 5},
-					Thirst = {Min = 10, Max = 15},
-					Clean = {Min = -1, Max = -5},
-				},
-			},
-	[19] = { isPoison = false, item = "consumable_herb_hummingbird_sage" },	--Шалфей покрывальцевый
-	[20] = { isPoison = true, item = "consumable_herb_indian_tobacco" },		--Индейский табак
-	[23] = { --Молочай
-				isPoison = false,
-				item = "consumable_herb_milkweed",
-				param = {
-					Health = {Min = 25, Max = 35},
-					Stamina = {Min = 5, Max = 15},
-					Hunger = {Min = 5, Max = 10},
-					Thirst = {Min = -5, Max = -10},
-					Clean = {Min = -5, Max = -10},
-				},
-			},
-	[26] = { --Олеандр
-				isPoison = true,
-				item = "consumable_herb_oleander_sage",
-				param = {
-					Stress = {Min = 5, Max = 15},
-					Health = {Min = -100.0, Max = -200},
-					Stamina = {Min = -25, Max = -45},
-					Hunger = {Min = -10, Max = -20},
-					Thirst = {Min = -15, Max = -30},
-					Clean = {Min = -5, Max = -10},
-				},
-			},
-	[27] = { isPoison = false, item = "consumable_herb_oregano" },	--Душица
-	[28] = { isPoison = false, item = "consumable_herb_parasol_mushroom" },	--Гриб-зонтик
-	[29] = { isPoison = false, item = "consumable_herb_prairie_poppy" },	--Пустынный мак
-	[31] = { isPoison = false, item = "consumable_herb_rams_head" },	--Гриб-баран
-	[33]  = { --Малина
-				isPoison = false,
-				item = "consumable_herb_red_raspberry",
-				param = {
-					Hunger = {Min = 1, Max = 5},
-					Thirst = {Min = 10, Max = 15},
-					Clean = {Min = -1, Max = -5},
-					
-				},
-			},
-	[34] = { isPoison = false, item = "consumable_herb_red_sage" },	--Красный шалфей
-	[38] = { isPoison = false, item = "consumable_herb_violet_snowdrop" },	--Фиолетовый подснежник
-	[39] = { --Дикая морковь
-				isPoison = false, 
-				item = "consumable_herb_wild_carrots",
-				use = false,
-				param = {
-					Health = {Min = 15.0, Max = 20.0},
-					Hunger = {Min = 5.0, Max = 15.0},
-				},
-			},
-	[40] = { isPoison = false, item = "consumable_herb_wild_feverfew" },	--Дикий пиретрум
-	[41] = { isPoison = false, item = "consumable_herb_wild_mint" },	--Мята
-	[42] = { isPoison = false, item = "consumable_herb_wintergreen_berry" },	--Гаультерия
-	[43] = { isPoison = false, item = "consumable_herb_yarrow" },	--Тысячелистник
-	[61] = { isPoison = false, item = "consumable_herb_saltbush" },	--Лук виноградничный
-	[62] = { isPoison = false, item = "" },	--Лебеда
-}
