@@ -2,9 +2,11 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local playerSpawn = false
 local spawnRadius = 100.0--100.0
-local prePlayerPosition = 0
-local eventLoot = {PlCoords = nil, Model = nil}
+local prePlayerPosition = nil
+local eventLoot = {PlCoords = nil, Model = nil, Eat = false}
 local spawnedScenariopoint = {}
+local SCENARIO_BUF_SIZE = 8192
+local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 
 
 AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
@@ -44,14 +46,14 @@ function CreateScenarioPointHash(scenarioHash, x, y, z, heading, radius, p6, boo
 	return Citizen.InvokeNative(0x94B745CE41DB58A1, scenarioHash, x, y, z, heading, radius, p6, bool_p7, Citizen.ResultAsInteger())
 end
 
-function getLootScenarioHash(playerPosition, spawnRadius, buffSize, foundNums)
+function getLootScenarioHash(playerPosition, spawnRadius, foundNums)
     local scenarios = {}
-	local DataStruct = DataView.ArrayBuffer(buffSize)
-	local is_data_exists = GetScenarioPointsInArea(playerPosition, spawnRadius, DataStruct:Buffer(), foundNums)
+	--local DataStruct = DataView.ArrayBuffer(buffSize)
+	local is_data_exists = GetScenarioPointsInArea(playerPosition, spawnRadius, scenarioBuf:Buffer(), foundNums)
 	
 	if is_data_exists then
 		for i = 1, is_data_exists, 1 do
-			local scenario = DataStruct:GetInt32(8 * i)			
+			local scenario = scenarioBuf:GetInt32(8 * i)			
 			local hash = GetScenarioPointType(scenario)
 			local herbsScenarioPoint = Config.composite_scenario[hash] or nil
 			if DoesScenarioPointExist(scenario) then
@@ -69,20 +71,22 @@ function startPointCheck()
 	--void NETWORK_SET_SCRIPT_IS_SAFE_FOR_NETWORK_GAME ()  //0x3D0EAC6385DD6100
 	Citizen.InvokeNative(0x3D0EAC6385DD6100)
 	CreateScenarioPoints()
-	while not playerSpawn do -- Ждать, пока игрок не заспавнится
-		Wait(1000)		
-		return
-	end
+	--while not playerSpawn do -- Ждать, пока игрок не заспавнится
+	--	Wait(1000)
+	--end
 
 	CreateThread(function()
-	Wait(0)
+		Wait(1)
 		while playerSpawn do
 			Wait(2000) -- 2 sec
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			
+			if not prePlayerPosition then
+				prePlayerPosition = playerPosition
+			end
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
 	
-				local scenarios = getLootScenarioHash(playerPosition, spawnRadius, 8192, 600)
+				local scenarios = getLootScenarioHash(playerPosition, spawnRadius, 600)
 				for _, scenarioData in ipairs(scenarios) do
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
 					local pointHeading = GetScenarioPointHeading(scenarioData.scenario, true)
@@ -92,7 +96,8 @@ function startPointCheck()
 						local gattorEggNum = 0
 						gattorEggNum = math.random(0, 2)
 						herbID = herbID + gattorEggNum
-						herbHash = "COMPOSITE_LOOTABLE_GATOR_EGG_" .. 3 + gattorEggNum .. "_DEF"
+						local eggIndex = 3 + gattorEggNum
+						herbHash = "COMPOSITE_LOOTABLE_GATOR_EGG_" .. eggIndex .. "_DEF"
 					end
 					CreateServerComposite(herbID, herbHash, pointCoords, pointHeading)
 				end
@@ -107,66 +112,117 @@ function PlayerMovedTooFar(currentPos, prevPos, radius)
     return dist > radius  -- возвращаем true, если расстояние больше заданного радиуса, иначе false
 end
 
-local Eat = false
+--local Eat = false
 local player = 0
 
 CreateThread(function()
-	while true do
-		Wait(0)
-		if playerSpawn then
-
-		player = PlayerPedId()
-		if HasAnimEventFired(player, joaat("EFFECTPLANTBLIP")) or HasAnimEventFired(player, joaat("ADDEGG")) then
-			eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
-			--print("EFFECTPLANTBLIP")
-		end
-
-		if HasAnimEventFired(player, joaat("EATPLANT")) then
-			Eat = true
-		end
-
-		local size = GetNumberOfEvents(0)
-		if size > 0 then
-			for i = 0, size - 1 do
-				local eventAtIndex = GetEventAtIndex(0, i)
-
-				if eventAtIndex == joaat("EVENT_CALCULATE_LOOT") then
-					if eventLoot.PlCoords == nil then
-						eventLoot.PlCoords = GetEntityCoords(player)
-					end
-					--print("<----EVENT_CALCULATE_LOOT---->")
-				elseif eventAtIndex == joaat("EVENT_LOOT") then
-					if IsPedOnMount(PlayerPedId()) == false then
-						local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
-						eventLoot.Model = view["56"]
-					end
-					--print("<----EVENT_LOOT---->")
-				elseif eventAtIndex == joaat("EVENT_LOOT_COMPLETE") then
-					local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
-					local ped = view["0"] --прилетает наш Ped-Player
-					if eventLoot.Model == nil or eventLoot.Model == 0 then
-						eventLoot.Model = GetEntityModel(view["2"])
-						--print("EVENT_LOOT_COMPLETE MODEL = " .. tostring(eventLoot.Model))
-					end
-					--для яиц и для сбора на лошади
-					if eventLoot.PlCoords == nil then
-						eventLoot.PlCoords = GetEntityCoords(player)
-					end
-
-					if ped == player then
-						if eventLoot.PlCoords and eventLoot.Model ~= 0 then
-							FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, not Eat)
+	while true do		
+		if not playerSpawn then
+            Wait(500)
+        else
+			player = PlayerPedId()
+			if HasAnimEventFired(player, `EFFECTPLANTBLIP`) or HasAnimEventFired(player, `ADDEGG`) then
+				eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
+				print("EFFECTPLANTBLIP")
+			end
+	
+			if HasAnimEventFired(player, `EATPLANT`) then
+				eventLoot.Eat = true
+				print("EATPLANT")
+			end
+	
+			local size = GetNumberOfEvents(0)
+			if size > 0 then
+				for i = 0, size - 1 do
+					local eventAtIndex = GetEventAtIndex(0, i)
+			
+					if eventAtIndex == `EVENT_CALCULATE_LOOT` then
+						if eventLoot.PlCoords == nil then
+							eventLoot.PlCoords = GetEntityCoords(player)
 						end
-					end
-					Eat = false
-					eventLoot = {PlCoords = nil, Model = nil}
-					--print("<----EVENT_LOOT_COMPLETE---->")
+						--print("<----EVENT_CALCULATE_LOOT---->")
+					elseif eventAtIndex == `EVENT_LOOT` then
+						if IsPedOnMount(player) == false then
+							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
+							eventLoot.Model = view["56"]
+						end
+						--print("<----EVENT_LOOT---->")
+					elseif eventAtIndex == `EVENT_LOOT_COMPLETE` then
+						local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
+						local ped = view["0"] --прилетает наш Ped-Player
+						if eventLoot.Model == nil or eventLoot.Model == 0 then
+							eventLoot.Model = GetEntityModel(view["2"])
+							--print("EVENT_LOOT_COMPLETE MODEL = " .. tostring(eventLoot.Model))
+						end
+						--для яиц и для сбора на лошади
+						if eventLoot.PlCoords == nil then
+							eventLoot.PlCoords = GetEntityCoords(player)
+						end
+			
+						if ped == player then
+							if eventLoot.PlCoords and eventLoot.Model then
+								if IsValidHerbModel(eventLoot.Model) then
+									FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, eventLoot.Eat)
+								else
+									if Config.Debug then
+										print("Model is not a herb, ignoring event")
+									end
+								end
+							end
+						end						
+						eventLoot.PlCoords = nil
+						eventLoot.Model = nil
+						eventLoot.Eat = false
+						--print("<----EVENT_LOOT_COMPLETE---->")
+					--elseif eventAtIndex == `EVENT_LOOT_PLANT_START` then						
+					--	local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 72)
+					--	print("<----EVENT_LOOT_PLANT_START---->" .. tostring(view["0"]), tostring(view["1"]), tostring(view["2"]), tostring(view["3"]), tostring(view["4"]))
+					--	--срабатывает только когда съедает растение или поднимает- но только мелкие- кусты не срабатывают
+					end					
 				end
 			end
-		end
+			Wait(1)
 		end
 	end
 end)
+
+function IsValidHerbModel(model)
+    -- Проверяем что это именно хеш растения (например из GetHerbIDFromLootedModel)
+    if model and model ~= 0 then
+        local herbID = GetHerbIDFromLootedModel(model)
+        return herbID ~= 0  -- Если найден ID - это растение
+    end
+    return false
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function DumpTable(tbl)
     for k, v in pairs(tbl) do

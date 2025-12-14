@@ -4,19 +4,20 @@ games {"rdr3"}
 
 author '@CKAJIA'
 description 'Herbs and Eggs'
-version '1.0.0'
+version '1.5.3'
 
 shared_scripts {
 	'@ox_lib/init.lua',
+	'@jo_libs/init.lua',
     "exports.js",
     'config.lua',
 }
 
 client_scripts {
+	'client/dataview.lua',
 	'client/client.lua',
 	'client/utilites.lua',
-	'client/deletedherbs.lua',
-	'client/dataview.lua'
+	'client/deletedherbs.lua'
 }
 
 server_scripts {

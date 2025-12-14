@@ -3,56 +3,60 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 local playerSpawn = false
 local Composite = {}
 --local FullLootedScenarioPoint = {}
-local deleteDistance = 2900.0
-local CompositePointCol = 1
+local DELETE_DISTANCE = 2900.0
+local NEARBY_DISTANCE = 150.0
+local EMERGENCY_DESPAWN_DISTANCE = 625.0
+local MAX_SPAWN_COMPOSITE = 170
 local PlaySoundCoordsTable = {}
 local PlayEffectCoordsTable = {}
-local MaxRecordInTable = 500 --на самом деле 500 точек держится в таблице.
+local MAX_RECORD_IN_TABLE = 500 --на самом деле 500 точек держится в таблице.
 local isBusy = false
 
 local spawnCompositeNum = 1 --на случай если слишком много заспавнено и не очистилось
 
 function checkRecordAndClear(playerPosition)
-	if CompositePointCol > MaxRecordInTable then		
+	local playerPos = playerPosition.xy
+	
+	-- Режим 1: Emergency - если критично много точек
+	if countComposites() > MAX_RECORD_IN_TABLE then		
 		for key, value in pairs(Composite) do
-			local dist = #(playerPosition.xy - key)
-			if dist >= deleteDistance then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
+			local dist = #(playerPos - key)
+			if dist > DELETE_DISTANCE then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
 				--print("Delete point = " .. key)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key] = nil
-				CompositePointCol = CompositePointCol - 1
-				if CompositePointCol < 1 then
-					CompositePointCol = 1
-				end
 			end
 		end
-	else
-		for key, value in pairs(Composite) do
-			local dist = #(playerPosition.xy - key)--150.0
-			if dist >= 150.0 and value.PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
-				--проверяем если еще есть composite на точке не собранные- то просто обнуляем
-				--а если все собрали то удаляем запись
-				if not HerbsRemains(key) then
-					Composite[key] = nil--убираем запись.
-					if Config.Debug then
-						print("No more composite in point. Delete record in Composite")
-					end
-				else				
-					Composite[key].CompositeId = {}
-					Composite[key].VegModifierHandle = {}
-					Composite[key].PointSpawn = false
-					--print("Despawn point = " .. key)
+		return
+	end
+	
+	-- Режим 2: Normal - деспаун дальних
+	for key, value in pairs(Composite) do
+		local dist = #(playerPos - key)--150.0
+		if dist > NEARBY_DISTANCE and value.PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
+			deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
+			--проверяем если еще есть composite на точке не собранные- то просто обнуляем
+			--а если все собрали то удаляем запись
+			if not HerbsRemains(key) then
+				Composite[key] = nil--убираем запись.
+				if Config.Debug then
+					print("No more composite in point. Delete record in Composite")
 				end
+			else				
+				Composite[key].CompositeId = {}
+				Composite[key].VegModifierHandle = {}
+				Composite[key].PointSpawn = false
+				--print("Despawn point = " .. key)
 			end
 		end
 	end
+
 	--Экстренный деспавн если слишком много заспавненых composite
 	--максимум можно показать сразу 180 composite
-	if spawnCompositeNum > 160 then
+	if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then
 		for key, value in pairs(Composite) do
-			local dist = #(playerPosition.xy - key)
-			if dist >= 625.0 then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
+			local dist = #(playerPos - key)
+			if dist >= EMERGENCY_DESPAWN_DISTANCE then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
 				print("Emergency Despawn point = " .. key)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key].CompositeId = {}
@@ -63,6 +67,14 @@ function checkRecordAndClear(playerPosition)
 	end
 end
 
+function countComposites()
+    local count = 0
+    for _ in pairs(Composite) do
+        count = count + 1
+    end
+    return count
+end
+--[[
 function StartEmergencyClear()
 	for key, value in pairs(Composite) do
 		if Composite[key].PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
@@ -74,7 +86,7 @@ function StartEmergencyClear()
 		end
 	end
 end
-
+--]]
 function DeactivatePoints(scenario)
 	SetScenarioPointActive(scenario, false)
 end
@@ -160,7 +172,6 @@ function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, pac
             end
         end
     end
-    CompositePointCol = CompositePointCol + 1
 end
 
 
@@ -552,7 +563,7 @@ CreateThread(function()
 		Wait(150)
 		if playerSpawn then
 			local playerPosition = GetEntityCoords(PlayerPedId())
-			local scenarios = getLootScenarioHash(playerPosition, 25.0, 2048, 100)
+			local scenarios = getLootScenarioHash(playerPosition, 25.0, 100)
 			if scenarios and #scenarios > 0 then
 				for _, scenarioData in ipairs(scenarios) do
 					local HerbID = scenarioData.herbsScenarioPoint.HerbID
@@ -799,6 +810,8 @@ function IsControlAlwaysPressed(inputGroup, control)
     return IsControlPressed(inputGroup, control) or IsDisabledControlPressed(inputGroup, control)
 end
 
+
+
 function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 	local lPickUp = Pickup
 	local lModel = Model
@@ -882,6 +895,7 @@ function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
 	end
 end
 
+
 function GiveAdditionalRewards(herbID)
 	if Config.Composites[herbID].rewards then
 		for _, reward in pairs(Config.Composites[herbID].rewards) do
@@ -906,7 +920,7 @@ function GetNearestScenario(PickUpPlayerCoords, Model)
 	local herbId = nil
 	local compositeIndex = nil
 	local lootHerb = GetHerbIDFromLootedModel(Model)
-	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 4096, 200)
+	local scenarios = getLootScenarioHash(PickUpPlayerCoords, radius, 200)
 	local pickupCoords = PickUpPlayerCoords
 	
 	-- Теперь пройдемся по всем точкам и найдем ближайшую в момент взятия
