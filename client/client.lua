@@ -123,12 +123,12 @@ CreateThread(function()
 			player = PlayerPedId()
 			if HasAnimEventFired(player, `EFFECTPLANTBLIP`) or HasAnimEventFired(player, `ADDEGG`) then
 				eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
-				print("EFFECTPLANTBLIP")
+				--print("EFFECTPLANTBLIP")
 			end
 	
 			if HasAnimEventFired(player, `EATPLANT`) then
 				eventLoot.Eat = true
-				print("EATPLANT")
+				--print("EATPLANT")
 			end
 	
 			local size = GetNumberOfEvents(0)
