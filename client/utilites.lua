@@ -11,20 +11,24 @@ local PlaySoundCoordsTable = {}
 local PlayEffectCoordsTable = {}
 local MAX_RECORD_IN_TABLE = 500 --на самом деле 500 точек держится в таблице.
 local isBusy = false
+local isPickUp = false
 
+local CompositePointCol = 0
 local spawnCompositeNum = 1 --на случай если слишком много заспавнено и не очистилось
 
 function checkRecordAndClear(playerPosition)
 	local playerPos = playerPosition.xy
 	
 	-- Режим 1: Emergency - если критично много точек
-	if countComposites() > MAX_RECORD_IN_TABLE then		
+	if CompositePointCol > MAX_RECORD_IN_TABLE then		
 		for key, value in pairs(Composite) do
 			local dist = #(playerPos - key)
 			if dist > DELETE_DISTANCE then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
 				--print("Delete point = " .. key)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key] = nil
+				CompositePointCol = CompositePointCol - 1
+				if CompositePointCol < 1 then CompositePointCol = 1	end
 			end
 		end
 		return
@@ -39,6 +43,8 @@ function checkRecordAndClear(playerPosition)
 			--а если все собрали то удаляем запись
 			if not HerbsRemains(key) then
 				Composite[key] = nil--убираем запись.
+				CompositePointCol = CompositePointCol - 1
+				if CompositePointCol < 1 then CompositePointCol = 1	end
 				if Config.Debug then
 					print("No more composite in point. Delete record in Composite")
 				end
@@ -65,6 +71,10 @@ function checkRecordAndClear(playerPosition)
 			end
 		end
 	end
+	
+	--if Config.Debug then
+	--	print("Spawn composite num = " .. tostring(spawnCompositeNum))
+	--end
 end
 
 function countComposites()
@@ -74,19 +84,7 @@ function countComposites()
     end
     return count
 end
---[[
-function StartEmergencyClear()
-	for key, value in pairs(Composite) do
-		if Composite[key].PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-			--print("Emergency Despawn point = " .. key)
-			deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
-			Composite[key].CompositeId = {}
-			Composite[key].VegModifierHandle = {}
-			Composite[key].PointSpawn = false
-		end
-	end
-end
---]]
+
 function DeactivatePoints(scenario)
 	SetScenarioPointActive(scenario, false)
 end
@@ -116,6 +114,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
             PointSpawn = false, CompositeId = {}, PackedSlots = packedSlots, HerbCoords = {},
             VegModifierHandle = {}, AttachEntity = nil, Entitys = {}, GroupPromt = nil, PickupPrompt = nil
         }
+		CompositePointCol = CompositePointCol + 1
 		haveRecord = false
 	else
 		HerbID = Composite[pointCoords.xy].HerbID
@@ -159,25 +158,21 @@ end
 
 -- Функция для спауна композитных объектов
 function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
-    for index = 1, 4 do
+    for index = 1, #packedSlots do
         if packedSlots[index] ~= nil then
             RequestAndWaitForComposite(compositeHash)
-            if AreCompositeLootableEntityDefAssetsLoaded(compositeHash) then
-                local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
-                if compositeId and compositeId > 0 then
-                    Composite[pointCoords.xy].CompositeId[index] = compositeId
-                    Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
-                    Composite[pointCoords.xy].PointSpawn = true
-                end
+            local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
+            if compositeId and compositeId > 0 then
+                Composite[pointCoords.xy].CompositeId[index] = compositeId
+                Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
+                Composite[pointCoords.xy].PointSpawn = true
             end
         end
     end
 end
 
-
-
 function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
-	local serverComposite = {}
+	--local serverComposite = {}
 	if not Composite[pointCoords.xy] then
 		local packedSlots = {}		
 	
@@ -200,16 +195,21 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		else--Это для одиночных
 			packedSlots = GenerateSinglePackedCompositeSlot(SpawnCol, variantMax)
 		end	
-		serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, PackedSlots = packedSlots }
-		TriggerServerEvent("rsg-composite:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
+		--serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, PackedSlots = packedSlots }
+		--TriggerServerEvent("rsg-composite:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
+		TriggerServerEvent("rsg-composite:server:AddToServerPoint", 
+		pointCoords.xy, 
+		{
+            HerbID = HerbID,
+            CompositeHash = compositeHash,
+            PointCoords = pointCoords,
+            PointHeading = pointHeading,
+            PackedSlots = packedSlots
+        })
 	elseif Composite[pointCoords.xy].PointSpawn == false then
 		StartCreateComposite(Composite[pointCoords.xy].HerbID, Composite[pointCoords.xy].CompositeHash, pointCoords, pointHeading, Composite[pointCoords.xy].PackedSlots)
 	end
 end
-
-
-
-
 
 function CreatePrompts()
 	local str = CreateVarString(10, 'LITERAL_STRING', Config.PromtName)
@@ -242,7 +242,6 @@ function GeneratePackedCompositeSlots(spawnCol, minSlots, maxSlots, variantMax)
     for index = 1, slotCount do
 		--проверка на nil почему-то иногда получаем nil и ошибку
 		if rotationPool[index] == nil  then
-			DumpTable(rotationPool)
 			rotationPool[index] = 0			
 			print("ERROR: rotationPool[" .. index .. "] == nil")
         end
@@ -373,12 +372,11 @@ function GetRotationOffset(slotIndex, packedSlots)
     return offset, rotation, variant
 end
 
---function CreateComposite(uParam0, scenarioPointHeading)
 function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, packedSlots, pointCoords)
     local compositeId = 0
 	local vegModifierHandle = 0
 	if index <= 4 then		
-        if not VectorEmpty(herbCoords[index]) then
+        if not isVectorEmpty(herbCoords[index]) then
             local onGround = 0
             if HerbID == 1 or HerbID == 9 or HerbID == 10 or HerbID == 17 or HerbID == 21 or HerbID == 25 or HerbID == 32 or HerbID == 36 then
                 onGround = 2
@@ -403,6 +401,7 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
 			--если глючный composite - то удаляем его сразу
 			if compositeId == -1 then
 				NativeDeleteComposite(compositeId)
+				print("ERROR: Composite not spawn(check spawnCompositeNum)")
 			else
 				--получаем все Entitys у композита чтобы потом его можно было найти в ивенте
 				--print(compositeId, json.encode(GetHerbCompositeNumEntities(compositeId, 25)))
@@ -432,14 +431,6 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
 			end
         end
     end
-	
-	--if compositeId > 0 then
-	--	spawnCompositeNum = spawnCompositeNum + 1
-	--	return compositeId, vegModifierHandle
-	--elseif compositeId == -1 then
-	--	--запускаем экстренную очистку
-	--	StartEmergencyClear()
-	--end
 end
 
 --Despawn herbs
@@ -460,7 +451,7 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 		end
 	end
 	for i = 1, 4 do
-		if vegModifierHandle[i] and vegModifierHandle[i] > 0 then
+		if vegModifierHandle[i] and vegModifierHandle[i] ~= 0 then
 			RemoveVegModifierSphere(vegModifierHandle[i], 1)
 		end
 	end
@@ -478,30 +469,13 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 end
 
 function DeleteSound(coordsXY)
-	--for key, value in pairs(PlaySoundCoordsTable) do		
-	--	if key.xy == coordsXY then
-	--		stopSound(PlaySoundCoordsTable[key])
-	--		PlaySoundCoordsTable[key] = nil
-	--	end
-	--end
 	local soundID = PlaySoundCoordsTable[coordsXY]
 	if soundID then
 		stopSound(soundID)
 		PlaySoundCoordsTable[coordsXY] = nil
 	end
 end
---[[
-function DeleteEffect(coordsXY)
-	for key, value in pairs(PlayEffectCoordsTable) do		
-		if key == coordsXY and PlayEffectCoordsTable[key] then
-			if DoesParticleFxLoopedExist(PlayEffectCoordsTable[key]) then    -- DoesParticleFxLoopedExist
-                RemoveParticleFx(PlayEffectCoordsTable[key], false) -- RemoveParticleFx
-				PlayEffectCoordsTable[key] = nil
-            end
-		end
-	end
-end
---]]
+
 function DeleteEffect(coordsXY)
 	local effectID = PlayEffectCoordsTable[coordsXY]
 	if effectID and DoesParticleFxLoopedExist(effectID) then
@@ -536,7 +510,6 @@ function stopSound(soundID) --удаляет звук если расстоян�
 end
 
 function RareHerbs(HerbID, HerbCoords, pointCoords)
-	--if isRareHerbs(HerbID) then
 	if Config.Composites[HerbID].spawn.isUnique then
 		local foundEntities = CreateVolumeAndGetEntity(HerbCoords, 0.5)
 		for _, entity in ipairs(foundEntities) do
@@ -550,11 +523,15 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 				--end
 			end
 		end
-		--if HerbID == 44 then
-		--	MAP._0x7563CBCA99253D1A(entity, joaat("BLIP_MP_ROLE_NATURALIST"))
-		--else
-		--	MAP._0x7563CBCA99253D1A(entity, joaat("BLIP_MP_ROLE_COLLECTOR_ILO"))
-		--end
+		
+		local lastEntity = foundEntities[#foundEntities]
+		if lastEntity and DoesEntityExist(lastEntity) then
+			if HerbID == 44 then
+				Citizen.InvokeNative(0x7563CBCA99253D1A, lastEntity, `BLIP_MP_ROLE_NATURALIST`) --SetBlipIconToLockonEntityPrompt(entity, blipIcon)
+			else
+				Citizen.InvokeNative(0x7563CBCA99253D1A, lastEntity, `BLIP_MP_ROLE_COLLECTOR_ILO`)
+			end
+		end
 	end
 end
 
@@ -568,19 +545,21 @@ CreateThread(function()
 				for _, scenarioData in ipairs(scenarios) do
 					local HerbID = scenarioData.herbsScenarioPoint.HerbID
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
+					local key = KeyFromCoords(pointCoords.xy)
 					--print("pointCoords = " .. json.encode(pointCoords))
 					local distance = #(playerPosition.xy - pointCoords.xy)
-					if Composite[pointCoords.xy] and not Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] then
+					if Composite[pointCoords.xy] and not Config.FullLootedScenarioPoint[key] then
 						if isSPHerbs(HerbID) then
 							if distance <= 2.0 then
 								local pickTime = Config.AutoEquipKnife and equipKnife(HerbID) or getPickupTime(HerbID)
 								local prompt = Composite[pointCoords.xy].PickupPrompt
 								
-								PicUpOrchid(pointCoords, prompt, pickTime)
+								PicUpOrchid(pointCoords, prompt, pickTime, HerbID)
 							end
 						end
 						--elseif isRareHerbs(HerbID) or isEggs(HerbID) then
-						if Config.Composites[HerbID].spawn.isUnique and not Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] then
+						local herbCfg = Config.Composites[HerbID]
+						if herbCfg and herbCfg.spawn and herbCfg.spawn.isUnique and not Config.FullLootedScenarioPoint[key] then
 							if distance <= 20.0 and not PlaySoundCoordsTable[pointCoords.xy] then						
 								playSound(pointCoords)
 							elseif distance > 20.0 and PlaySoundCoordsTable[pointCoords.xy] then
@@ -588,7 +567,7 @@ CreateThread(function()
 							end					
 						end
 					--если точка залутана и есть запись со звуком - удаляем звук
-					elseif Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] and PlaySoundCoordsTable[pointCoords.xy] then
+					elseif Config.FullLootedScenarioPoint[key] and PlaySoundCoordsTable[pointCoords.xy] then
 						DeleteSound(pointCoords.xy)
 					end
 				end
@@ -623,16 +602,24 @@ function DeletePromptAndGroup(pointCoords)
 	end
 end
 
-function PicUpOrchid(pointCoords, pickupPrompt, pickTime)
-	local picking = false	
-	if PromptHasHoldModeCompleted(pickupPrompt) then
+function PicUpOrchid(pointCoords, pickupPrompt, pickTime, herbID)
+	--local picking = false
+	if isPickUp then return end
+	if PromptHasHoldModeCompleted(pickupPrompt) then		
 		local PlayerPed = PlayerPedId()
-		local entity = Composite[pointCoords.xy].AttachEntity
-		local groupPromt = Composite[pointCoords.xy].GroupPromt
+		local comp = Composite[pointCoords.xy]
+		if not comp then return end
+		local entity = comp.AttachEntity
+		if not (entity and DoesEntityExist(entity)) then return end
+		isPickUp = true --именно после проверки entity
 		--удаляем prompt
 		DeletePromptAndGroup(pointCoords.xy)
 		
-		local threadId = Citizen.CreateThread(function()
+		
+		--print("Нажали")
+		local picking = true
+		
+		CreateThread(function()
 			while picking do
 				Wait(0) -- Продолжаем выполнение других тиков
 				local ped = PlayerId()
@@ -644,27 +631,32 @@ function PicUpOrchid(pointCoords, pickupPrompt, pickTime)
 				DisableControlAction(0, `INPUT_SPECIAL_ABILITY`, true)
 			end
 		end)
-		--print("Нажали")
-		picking = true
+		
 		local model = GetEntityModel(entity)
 		local playerPosition = GetEntityCoords(PlayerPed)
 		TaskLootEntity(PlayerPed, entity) --этой командой лутает цветки и т.д.
 		--SetModelAsNoLongerNeeded(model)
         --SetEntityAsNoLongerNeeded(entity)
-		Composite[pointCoords.xy].AttachEntity = nil		
+		comp.AttachEntity = nil
+		
+		local herbType = Config.Composites[herbID].herbNameHash
+		if herbType ~= 0 then
+			TelemetryHerbPicked(herbType)
+			CompendiumHerbPicked(herbType, pointCoords)
+		end
 		
 		Wait(pickTime * 1000) -- чтобы не было повторных нажатий
 		ClearPedTasks(PlayerPed)
 		ClearPedSecondaryTask(PlayerPed)
 
-		FindPicupCompositeAndCoords(playerPosition, model, true)		
+		FindPicupCompositeAndCoords(playerPosition, model, true)
+		picking = false
+		Wait(0)
 		EnableControlAction(0, `INPUT_SECONDARY_SPECIAL_ABILITY_SECONDARY`, true)
 		EnableControlAction(0, `INPUT_SPECIAL_ABILITY`, true)
-		--Citizen.InvokeNative(0x87ED52AE40EA1A52, threadId)--TERMINATE_THREAD
-	end
-	picking = false	
+		isPickUp = false		
+	end	
 end
-
 
 function SPHerbs(HerbID, herbCoords, pointCoords)
 	if isSPHerbs(HerbID) then
@@ -748,9 +740,6 @@ function addEffectAndCheck(pointCoords, HerbID)
 	end	
 end
 
-
-
-
 function CreateVolumeAndGetEntity(herbCoords, scale) --scale = 5.0
 	local volumeArea = CreateVolumeSphere(herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
 	local itemSet = CreateItemset(true)
@@ -775,22 +764,17 @@ end
 
 
 
-function VectorEmpty(herbVector)
-	if herbVector ~= nil then
-		return herbVector.x == 0.0 and herbVector.y == 0.0 and herbVector.z == 0.0
-	else
-		return true
-	end
-
+function isVectorEmpty(herbVector)
+	return (herbVector == nil) or (herbVector.x == 0.0 and herbVector.y == 0.0 and herbVector.z == 0.0)
 end
 
 function correctCoords(coords, heading)
-    local c1 = math.sin(heading)
-    local c2 = math.cos(heading)
-    local x = (coords.x * c2) - (coords.y * c1)
-    local y = (coords.x * c1) + (coords.y * c2)
-    local z = coords.z
-	local correct = vector3(x, y, z)
+    local sinYaw = math.sin(heading)
+    local cosYaw = math.cos(heading)
+    local rotX = (coords.x * cosYaw) - (coords.y * sinYaw)
+    local rotY = (coords.x * sinYaw) + (coords.y * cosYaw)
+
+	local correct = vector3(rotX, rotY, coords.z)
     return correct
 end
 
@@ -810,106 +794,95 @@ function IsControlAlwaysPressed(inputGroup, control)
     return IsControlPressed(inputGroup, control) or IsDisabledControlPressed(inputGroup, control)
 end
 
+-- Пытается найти ближайший scenario/слот после лута и применить результат:
+-- выдача награды/поедание + очистка слота + отключение точки если пусто.
+function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
+    -- 1) Откуда искать: если на маунте, лучше искать от игрока
+    local searchCoords = pickupCoords
+	local ped = PlayerPedId()
+    if IsPedOnMount(ped) and not IsPedInAnyVehicle(ped) then
+        searchCoords = GetEntityCoords(ped)
+    end
 
+    -- 2) Пытаемся найти scenario/слот (иногда нужен небольшой “догон” после TaskLootEntity)
+    local maxRetries, retryDelayMs = 2, 500
+    local nearestScenario, pointCoords, HerbID, slotIndex = nil, nil, nil, nil
 
-function FindPicupCompositeAndCoords(PickUpPlayerCoords, Model, Pickup)
-	local lPickUp = Pickup
-	local lModel = Model
-	local lPickupCoords = PickUpPlayerCoords
-	local tries = 0
-	local nearestScenario, pointCoords, HerbID, compositeIndex
-	if IsPedOnMount(PlayerPedId()) then
-		lPickupCoords = GetEntityCoords(PlayerPedId())
-	end	
-	--local nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(lPickupCoords, Model)
-	--Иногда на лошади не сразу прилетает - поэтому повторим попытку через 500мс.
-	while nearestScenario == nil and tries < 2 do
-		nearestScenario, pointCoords, HerbID, compositeIndex = GetNearestScenario(lPickupCoords, Model)
-		if nearestScenario == nil then
-			Wait(500)
-			tries = tries + 1
+    for attempt = 1, (maxRetries + 1) do
+        nearestScenario, pointCoords, HerbID, slotIndex = GetNearestScenario(searchCoords, lootedModel)
+        if nearestScenario then break end
+        if attempt <= maxRetries then Wait(retryDelayMs) end
+    end
+
+    if not nearestScenario then
+        if Config.Debug then print("FindPicupCompositeAndCoords: nearestScenario not found") end
+        return
+    end
+
+    if not slotIndex then
+        if Config.Debug then print("ERROR: No slotIndex for nearestScenario point") end
+        return
+    end	
+
+    -- 3) Работаем с записью композита
+    local key = pointCoords.xy
+    local comp = Composite[key]
+    if not comp then
+        if Config.Debug then  print("ERROR: Composite record missing for point") end
+        return
+    end
+	
+	local nearestCompositeId = Composite[key].CompositeId[slotIndex]
+
+    -- 4) Если уникальные — выключаем эффекты/звуки на точке
+    if Config.Composites[HerbID].spawn.isUnique then
+        comp.AttachEntity = nil
+        DeleteEffect(key)
+    end
+    if PlaySoundCoordsTable[key] then
+        DeleteSound(key)
+    end
+
+    -- 5) Серверная логика: pickup vs eat
+    local amount = GetHerbPicupAmountID(HerbID)
+    if isPickup then
+		--мы собрали
+        TriggerServerEvent("rsg-composite:server:Gathered", HerbID, amount)
+		if Config.Debug then
+			print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. amount)
 		end
+    else
+		--мы съели
+        Eating(HerbID)
+        TriggerServerEvent("rsg-composite:server:Eating", HerbID)
+        if not Config.Composites[HerbID].eat.isPoison then
+            PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
+        end
+    end
+	
+	local herbType = Config.Composites[HerbID].herbNameHash
+	if herbType ~= 0 then
+		TelemetryHerbPicked(herbType)
+		CompendiumHerbPicked(herbType, searchCoords)
 	end
-	if nearestScenario then
-		if compositeIndex ~= nil then
-			local nearestCompositeId = Composite[pointCoords.xy].CompositeId[compositeIndex]
-			
-			if Config.Composites[HerbID].spawn.isUnique then
-				--SetEntityAsMissionEntity(Composite[pointCoords.xy].AttachEntity, true, true)
-				--DeleteEntity(Composite[pointCoords.xy].AttachEntity)
-				Composite[pointCoords.xy].AttachEntity = nil
-				DeleteEffect(pointCoords.xy)				
-			end
-			--останавливаем звук и удаляем его запись
-			if PlaySoundCoordsTable[pointCoords.xy] then
-				DeleteSound(pointCoords.xy)
-			end
 
-			local CompositeAmount = GetHerbPicupAmountID(HerbID)
+    -- 6) Помечаем конкретный слот пустым
+    comp.HerbCoords[slotIndex] = vector3(0.0, 0.0, 0.0)
+	--Citizen.InvokeNative(0x5758B1EE0C3FD4AC, nearestCompositeId, false) --удаляем композит. Только для дебага
+	--Composite[pointCoords].HerbCoords[compositeIndex] = {x = 0.0, y = 0.0, z = 0.0}
+	--удалять не надо. Они сами деспавнятся когда игрок далеко отойдет
+	--иначе кусты пропадаю прямо перед игроком.
 
-			if lPickUp then
-				--мы собрали
-				if Config.Debug then
-					print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. compositeIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. CompositeAmount)
-				end
-				TriggerServerEvent("rsg-composite:server:Gathered", HerbID, CompositeAmount)
-				--дополнительная награда
-				--GiveAdditionalRewards(HerbID)
-				--PlaySoundFrontend("Core_Fill_Up", "Consumption_Sounds", true, 0)
-			else
-				--мы съели
-				if Config.Debug then
-					print("Мы съели: HerbID = " .. HerbID .. " num = " .. CompositeAmount .. " nearestCompositeId = " .. nearestCompositeId)
-				end
-				Eating(HerbID)
-				TriggerServerEvent("rsg-composite:server:Eating", HerbID)
-				if not Config.Composites[HerbID].eat.isPoison then
-					PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
-				end
-			end
-			--local herbType = GetHerbType(HerbID)
-			local herbType = Config.Composites[HerbID].herbNameHash
-			if herbType ~= 0 then
-				TelemetryHerbPicked(herbType)
-				CompendiumHerbPicked(herbType, lPickupCoords)
-				--print("add in telemetry and compendium " .. tostring(herbType))
-			end
-			Composite[pointCoords.xy].HerbCoords[compositeIndex] = vector3(0.0, 0.0, 0.0)
-			--Citizen.InvokeNative(0x5758B1EE0C3FD4AC, nearestCompositeId, false) --удаляем композит. Только для дебага
-			--Composite[pointCoords].HerbCoords[compositeIndex] = {x = 0.0, y = 0.0, z = 0.0}
-			--удалять не надо. Они сами деспавнятся когда игрок далеко отойдет
-			--иначе кусты пропадаю прямо перед игроком.
-			--if isRareHerbs(HerbID) or isEggs(HerbID) then
-			if not HerbsRemains(pointCoords.xy) then
-				SetScenarioPointActive(nearestScenario, false)					
-				--это по хорошему надо бы в DB закинуть. И при старте деактивировать все точки уже собранные.
-				Config.FullLootedScenarioPoint[KeyFromCoords(pointCoords.xy)] = nearestScenario
-				if Config.Debug then
-					print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
-				end
-				TriggerServerEvent('rsg-composite:server:saveGatheredPoint', KeyFromCoords(pointCoords.xy), nearestScenario)				
-			end
-		else
-			print("ERROR: No compositeIndex")
+    -- 7) Если точка вычищена полностью — отключаем scenario и сохраняем в “вылутанные”
+    if not HerbsRemains(key) then
+        SetScenarioPointActive(nearestScenario, false)
+
+        Config.FullLootedScenarioPoint[KeyFromCoords(key)] = nearestScenario
+        TriggerServerEvent("rsg-composite:serverSaveGatheredPoint", KeyFromCoords(key), nearestScenario)
+		if Config.Debug then
+			print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
 		end
-	end
-end
-
-
-function GiveAdditionalRewards(herbID)
-	if Config.Composites[herbID].rewards then
-		for _, reward in pairs(Config.Composites[herbID].rewards) do
-			local chance = reward.chance			
-			local randomChance = math.random(1, 100)
-			if randomChance <= chance then
-				local item = reward.item
-				local amountMin = reward.amountMin
-				local amountMax = reward.amountMax
-				local amount = (amountMin == amountMax) and amountMin or math.random(amountMin, amountMax)
-				TriggerServerEvent("rsg-composite:server:AdditionRewards", item, amount)
-			end		
-		end				
-	end
+    end
 end
 
 function GetNearestScenario(PickUpPlayerCoords, Model)
@@ -941,7 +914,7 @@ function GetNearestScenario(PickUpPlayerCoords, Model)
 		minDistance = radius
 		local herbCoords = Composite[pCoords.xy].HerbCoords
 		for index, compositeCoords in ipairs(herbCoords) do
-			if not VectorEmpty(herbCoords[index]) then
+			if not isVectorEmpty(herbCoords[index]) then
 				local dist = #(pickupCoords - compositeCoords)
 				if dist < minDistance then
 					minDistance = dist
@@ -958,7 +931,7 @@ end
 function HerbsRemains(nearestScenarioPointIndex)
 	-- Теперь пройдемся по всем координатам растений и найдем ближайшую
 	for index = 1, 4 do
-		if not VectorEmpty(Composite[nearestScenarioPointIndex].HerbCoords[index]) then
+		if not isVectorEmpty(Composite[nearestScenarioPointIndex].HerbCoords[index]) then
 			return true
 		end
 	end
@@ -1115,21 +1088,7 @@ function PlayAnimScenesVomit()
 		Citizen.InvokeNative(0x84EEDB2C6E650000, animscene) --// _DELETE_ANIM_SCENE
 	end
 end
---[[
-function createAnimScene()
-	playAnim('script_story@sal1@ig@sal1_ig12_wake_up', "puking_fb_arthur", 6000)
-	Wait(6000)
-	playAnim('script_story@sal1@ig@sal1_ig12_wake_up', "exit_arthur", 2000)
-end
 
-function playAnim(dict, name, time)
-    RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do
-        Wait(100)
-    end
-    TaskPlayAnim(PlayerPedId(), dict, name, 1.0, 1.0, time, 1, 0, true, 0, false, 0, false)
-end
---]]
 function isMushroom(HerbID)
     if HerbID == 4 or HerbID == 8 or HerbID == 28 or HerbID == 31 then
         return true
@@ -1187,144 +1146,6 @@ function getPickupTime(HerbID)
 		return 12
 	end
 	return 9
-end
-
-function GetHerbID(hash)
-
-    if hash == joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF") then
-        return 2
-    elseif hash == joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF") then
-        return 3
-    elseif hash == joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
-        return 4
-    elseif hash == joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
-        return 5
-    elseif hash == joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF") then
-        return 6
-    elseif hash == joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF") then
-        return 7
-    elseif hash == joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
-        return 8
-    elseif hash == joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF") then
-        return 11
-    elseif hash == joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF") then
-        return 12
-    elseif hash == joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF") then
-        return 13
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF") then
-        return 15
-    elseif hash == joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
-        return 16
-    elseif hash == joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF") then
-        return 18
-    elseif hash == joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF") then
-        return 19
-    elseif hash == joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF") then
-        return 20
-    elseif hash == joaat("COMPOSITE_LOOTABLE_MILKWEED_DEF") then
-        return 23
-    elseif hash == joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF") then
-        return 26
-    elseif hash == joaat("COMPOSITE_LOOTABLE_OREGANO_DEF") then
-        return 27
-    elseif hash == joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
-        return 28
-    elseif hash == joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF") then
-        return 29
-    elseif hash == joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
-        return 31
-    elseif hash == joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
-        return 33
-    elseif hash == joaat("COMPOSITE_LOOTABLE_RED_SAGE_DEF") then
-        return 34
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF") then
-        return 37
-    elseif hash == joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF") then
-        return 38
-    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_CARROT_DEF") then
-        return 39
-    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF") then
-        return 40
-    elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_MINT_DEF") then
-        return 41
-    elseif hash == joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
-        return 42
-    elseif hash == joaat("COMPOSITE_LOOTABLE_YARROW_DEF") then
-        return 43
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
-        return 1
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
-        return 9
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
-        return 10
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
-        return 14
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
-        return 17
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
-        return 21
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
-        return 22
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
-        return 24
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
-        return 25
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
-        return 30
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
-        return 32
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
-        return 35
-    elseif hash == joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
-        return 36
-		
-	elseif hash == joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF") then
-        return 44
-	elseif hash == joaat("COMPOSITE_LOOTABLE_AGARITA_DEF") then
-        return 45
-	elseif hash == joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF") then
-        return 46
-	elseif hash == joaat("COMPOSITE_LOOTABLE_BITTERWEED_DEF") then
-        return 47
-	elseif hash == joaat("COMPOSITE_LOOTABLE_BLOODFLOWER_DEF") then
-        return 48
-	elseif hash == joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF") then
-        return 49
-	elseif hash == joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF") then
-        return 50
-	elseif hash == joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
-        return 51
-	elseif hash == joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF") then
-        return 52
-	elseif hash == joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
-        return 53
-	
-	--Яйца
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
-        return 54
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
-        return 55
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
-        return 56
-	elseif hash == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
-        return 57
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
-        return 58
-	elseif hash == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
-        return 59
-	elseif hash == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
-        return 60
-		
-	--Лук виноградничный
-	elseif hash == joaat("COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF") then
-        return 61
-	--Лебеда
-	elseif hash == joaat("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
-        return 62
-		
-    else
-        return 0
-    end
 end
 
 function GetSpawnCol(HerbID)
@@ -1517,154 +1338,6 @@ function GetHerbPicupAmountID(HerbID)
 	end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---[[
-
-function GetHerbPicupAmount(CompositeHash)
-	if CompositeHash == "COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_BAY_BOLETE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_BLACK_BERRY_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_BLACK_CURRANT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_BURDOCK_ROOT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_CHANTERELLES_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_COMMON_BULRUSH_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_CREEPING_THYME_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_DESERT_SAGE_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ENGLISH_MACE_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_GOLDEN_CURRANT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_INDIAN_TOBACCO_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_MILKWEED_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_OLEANDER_SAGE_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_OREGANO_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_PRAIRIE_POPPY_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_RAMS_HEAD_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_RED_SAGE_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_VANILLA_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_WILD_CARROT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_WILD_FEVERFEW_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_WILD_MINT_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_YARROW_INTERACTABLE_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF" then
-        return 1
-    elseif CompositeHash == "COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF" then
-        return 1
-	
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_AGARITA_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_TEXAS_BONNET_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_BITTERWEED_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_BLOODFLOWER_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_CARDINAL_FLOWER_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_CHOC_DAISY_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_CREEKPLUM_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_WILD_RHUBARB_INTERACTABLE_DEF" then
-        return 1
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_WISTERIA_DEF" then
-        return 1
-		
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF" then
-        return 3
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF" then
-        return 4
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF" then
-        return 5
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF" then
-        return 5
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF" then
-        return 4
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_LOON_EGG_3_DEF" then
-        return 3
-	elseif CompositeHash == "COMPOSITE_LOOTABLE_VULTURE_EGG_DEF" then
-        return 1
-
-		
-	else
-        return 1
-    end
-end
---]]
 function RequestAndWaitForComposite(compositeHash)
     Citizen.InvokeNative(0x73F0D0327BFA0812, compositeHash)  -- request COMPOSITE
 	
@@ -1703,690 +1376,6 @@ end
 function NativeDeleteComposite(compositeId)
     Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, false)
 end
---[[
-function GetHerbType(HerbID)
-	if HerbID == 2 then
-		return `HERB_ALASKAN_GINSENG`
-	elseif HerbID == 3 then
-        return `HERB_AMERICAN_GINSENG`
-	elseif HerbID == 4 then
-        return `HERB_BAY_BOLETE`
-	elseif HerbID == 5 then
-        return `HERB_BLACK_BERRY`
-	elseif HerbID == 6 then
-        return `HERB_BLACK_CURRANT`
-	elseif HerbID == 7 then
-        return `HERB_BURDOCK_ROOT`
-	elseif HerbID == 8 then
-        return `HERB_CHANTERELLES`
-	elseif HerbID == 11 then
-        return `HERB_COMMON_BULRUSH`
-	elseif HerbID == 12 then
-        return `HERB_CREEPING_THYME`
-	elseif HerbID == 13 then
-        return `HERB_DESERT_SAGE`
-	elseif HerbID == 15 then
-        return `HERB_ENGLISH_MACE`
-	elseif HerbID == 16 then
-        return `HERB_EVERGREEN_HUCKLEBERRY`
-	elseif HerbID == 18 then
-        return `HERB_GOLDEN_CURRANT`
-	elseif HerbID == 19 then
-        return `HERB_HUMMINGBIRD_SAGE`
-	elseif HerbID == 20 then
-        return `HERB_INDIAN_TOBACCO`
-	elseif HerbID == 23 then
-        return `HERB_MILKWEED`
-	elseif HerbID == 26 then
-        return `HERB_OLEANDER_SAGE`
-	elseif HerbID == 27 then
-        return `HERB_OREGANO`
-	elseif HerbID == 28 then
-        return `HERB_PARASOL_MUSHROOM`
-	elseif HerbID == 29 then
-        return `HERB_PRAIRIE_POPPY`
-	elseif HerbID == 31 then
-        return `HERB_RAMS_HEAD`
-	elseif HerbID == 33 then
-        return `HERB_RED_RASPBERRY`
-	elseif HerbID == 34 then
-        return `HERB_RED_SAGE`
-	elseif HerbID == 37 then
-        return `HERB_VANILLA_FLOWER`
-	elseif HerbID == 38 then
-        return `HERB_VIOLET_SNOWDROP`
-	elseif HerbID == 39 then
-        return `HERB_WILD_CARROTS`
-	elseif HerbID == 40 then
-        return `HERB_WILD_FEVERFEW`
-	elseif HerbID == 41 then
-        return `HERB_WILD_MINT`
-	elseif HerbID == 42 then
-        return `HERB_WINTERGREEN_BERRY`
-	elseif HerbID == 43 then
-        return `HERB_YARROW`
-	elseif HerbID == 1 then
-        return `HERB_ACUNAS_STAR_ORCHID`
-	elseif HerbID == 9 then
-        return `HERB_CIGAR_ORCHID`
-	elseif HerbID == 10 then
-        return `HERB_CLAMSHELL_ORCHID`
-	elseif HerbID == 14 then
-        return `HERB_DRAGONS_MOUTH_ORCHID`
-	elseif HerbID == 17 then
-        return `HERB_GHOST_ORCHID`
-	elseif HerbID == 21 then
-        return `HERB_LADY_OF_NIGHT_ORCHID`
-	elseif HerbID == 22 then
-        return `HERB_LADY_SLIPPER_ORCHID`
-	elseif HerbID == 24 then
-        return `HERB_MOCCASIN_FLOWER_ORCHID`
-	elseif HerbID == 25 then
-        return `HERB_NIGHT_SCENTED_ORCHID`
-	elseif HerbID == 30 then
-        return `HERB_QUEENS_ORCHID`
-	elseif HerbID == 32 then
-        return `HERB_RAT_TAIL_ORCHID`
-	elseif HerbID == 35 then
-        return `HERB_SPARROWS_EGG_ORCHID`
-	elseif HerbID == 36 then
-        return `HERB_SPIDER_ORCHID`
-	elseif HerbID == 44 then
-        return `HERB_HARRIETUM_OFFICINALIS`
-	elseif HerbID == 45 then
-        return `HERB_WILD_FLWR_AGARITA`
-	elseif HerbID == 46 then
-        return `HERB_WILD_FLWR_BLUE_BONNET`
-	elseif HerbID == 47 then
-        return `HERB_WILD_FLWR_BITTERWEED`
-	elseif HerbID == 48 then
-        return `HERB_WILD_FLWR_BLOOD_FLOWER`
-	elseif HerbID == 49 then
-        return `HERB_WILD_FLWR_CARDINAL_FLOWER`
-	elseif HerbID == 50 then
-        return `HERB_WILD_FLWR_CHOCOLATE_DAISY`
-	elseif HerbID == 51 then
-        return `HERB_WILD_FLWR_CREEK_PLUM`
-	elseif HerbID == 52 then
-        return `HERB_WILD_FLWR_RHUBARB`
-	elseif HerbID == 53 then
-        return `HERB_WILD_FLWR_WISTERIA`
---]]
-	
-	--[[
-	--Яйца
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
-        return 54
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
-        return 55
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
-        return 56
-	elseif hash == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
-        return 57
-	elseif hash == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
-        return 58
-	elseif hash == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
-        return 59
-	elseif hash == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
-        return 60
-		
-	--Лук виноградничный
-	elseif hash == joaat("COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF") then
-        return 61
-	--Лебеда
-	elseif hash == joaat("COMPOSITE_LOOTABLE_SALTBUSH_DEF") then
-        return 62
-	--]]	
---[[
-    else
-        return 0
-    end
-end
---]]
-
---[[
-function createAnimScene(entity)
-	local ped = PlayerPedId()
-	
-	Citizen.InvokeNative(0x48FAE038401A2888, ped, entity) --этой командой лутает цветки и т.д.
-		
-		
-	--playAnim('mech_pickup@plant@orchid_tree', "base", 6200)
-	--local boneIndex = GetPedBoneIndex(ped, 7966)
-	--Wait(1500)
-	--AttachEntityToEntity(entity, ped, boneIndex, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 2, 1, 0, 0)
-	--Wait(3200)
-	----DeleteObject(entity)--потом как все отрегулирую- надо это включить. Чтобы не спавнилось больше
-	--SetEntityVisible(entity, false)
-end
-
-function playAnim(dict, name, time)
-    RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do
-        Wait(100)
-    end
-    TaskPlayAnim(PlayerPedId(), dict, name, 1.0, 1.0, time, 1, 0, true, 0, false, 0, false)
-	
-	--animDict = "mech_pickup@plant@orchid_tree",
-    --animPart = "base",
-    --animDur = 4500
-	
-	--animscene  = script@playercamp@pick_orchid_plant@base_plant
-	--scenario@mech@player_pick_orchid_van_1m82@base
-	--scenario@mech@player_pick_orchid_van_1m82@enter
-	
-	--mech_pickup@plant@orchid_plant
-	--mech_pickup@plant@orchid_tree
-end
---]]
-
---[[
-function GetHerbHash(HerbID)
-    if HerbID == 2 then
-        return joaat("CONSUMABLE_HERB_GINSENG")
-    elseif HerbID == 3 then
-        return joaat("CONSUMABLE_HERB_GINSENG")
-    elseif HerbID == 4 then
-        return joaat("CONSUMABLE_HERB_BAY_BOLETE")
-    elseif HerbID == 5 then
-        return joaat("CONSUMABLE_HERB_BLACK_BERRY")
-    elseif HerbID == 6 then
-        return joaat("CONSUMABLE_HERB_CURRANT")
-    elseif HerbID == 7 then
-        return joaat("CONSUMABLE_HERB_BURDOCK_ROOT")
-    elseif HerbID == 8 then
-        return joaat("CONSUMABLE_HERB_CHANTERELLES")
-    elseif HerbID == 11 then
-        return joaat("CONSUMABLE_HERB_COMMON_BULRUSH")
-    elseif HerbID == 12 then
-        return joaat("CONSUMABLE_HERB_CREEPING_THYME")
-    elseif HerbID == 13 then
-        return joaat("CONSUMABLE_HERB_SAGE")
-    elseif HerbID == 15 then
-        return joaat("CONSUMABLE_HERB_ENGLISH_MACE")
-    elseif HerbID == 16 then
-        return joaat("CONSUMABLE_HERB_EVERGREEN_HUCKLEBERRY")
-    elseif HerbID == 18 then
-        return joaat("CONSUMABLE_HERB_CURRANT")
-    elseif HerbID == 19 then
-        return joaat("CONSUMABLE_HERB_SAGE")
-    elseif HerbID == 20 then
-        return joaat("CONSUMABLE_HERB_INDIAN_TOBACCO")
-    elseif HerbID == 23 then
-        return joaat("CONSUMABLE_HERB_MILKWEED")
-    elseif HerbID == 26 then
-        return joaat("CONSUMABLE_HERB_OLEANDER_SAGE")
-    elseif HerbID == 27 then
-        return joaat("CONSUMABLE_HERB_OREGANO")
-    elseif HerbID == 28 then
-        return joaat("CONSUMABLE_HERB_PARASOL_MUSHROOM")
-    elseif HerbID == 29 then
-        return joaat("CONSUMABLE_HERB_PRAIRIE_POPPY")
-    elseif HerbID == 31 then
-        return joaat("CONSUMABLE_HERB_RAMS_HEAD")
-    elseif HerbID == 33 then
-        return joaat("CONSUMABLE_HERB_RED_RASPBERRY")
-    elseif HerbID == 34 then
-        return joaat("CONSUMABLE_HERB_SAGE")
-    elseif HerbID == 37 then
-        return joaat("CONSUMABLE_HERB_VANILLA_FLOWER")
-    elseif HerbID == 38 then
-        return joaat("CONSUMABLE_HERB_VIOLET_SNOWDROP")
-    elseif HerbID == 39 then
-        return joaat("CONSUMABLE_HERB_WILD_CARROTS")
-    elseif HerbID == 40 then
-        return joaat("CONSUMABLE_HERB_WILD_FEVERFEW")
-    elseif HerbID == 41 then
-        return joaat("CONSUMABLE_HERB_WILD_MINT")
-    elseif HerbID == 42 then
-        return joaat("CONSUMABLE_HERB_WINTERGREEN_BERRY")
-    elseif HerbID == 43 then
-        return joaat("CONSUMABLE_HERB_YARROW")
-    elseif HerbID == 1 then
-        return joaat("PROVISION_RO_FLOWER_ACUNAS_STAR")
-    elseif HerbID == 9 then
-        return joaat("PROVISION_RO_FLOWER_CIGAR")
-    elseif HerbID == 10 then
-        return joaat("PROVISION_RO_FLOWER_CLAMSHELL")
-    elseif HerbID == 14 then
-        return joaat("PROVISION_RO_FLOWER_DRAGONS")
-    elseif HerbID == 17 then
-        return joaat("PROVISION_RO_FLOWER_GHOST")
-    elseif HerbID == 21 then
-        return joaat("PROVISION_RO_FLOWER_LADY_OF_NIGHT")
-    elseif HerbID == 22 then
-        return joaat("PROVISION_RO_FLOWER_LADY_SLIPPER")
-    elseif HerbID == 24 then
-        return joaat("PROVISION_RO_FLOWER_MOCCASIN")
-    elseif HerbID == 25 then
-        return joaat("PROVISION_RO_FLOWER_NIGHT_SCENTED")
-    elseif HerbID == 30 then
-        return joaat("PROVISION_RO_FLOWER_QUEENS")
-    elseif HerbID == 32 then
-        return joaat("PROVISION_RO_FLOWER_RAT_TAIL")
-    elseif HerbID == 35 then
-        return joaat("PROVISION_RO_FLOWER_SPARROWS")
-    elseif HerbID == 36 then
-        return joaat("PROVISION_RO_FLOWER_SPIDER")
-		
-	elseif HerbID == 44 then
-        return joaat("CONSUMABLE_HERB_HARRIETUM")
-	elseif HerbID == 45 then
-        return joaat("PROVISION_WLDFLWR_AGARITA")
-	elseif HerbID == 46 then
-        return joaat("PROVISION_WLDFLWR_TEXAS_BLUE_BONNET")
-	elseif HerbID == 47 then
-        return joaat("PROVISION_WLDFLWR_BITTERWEED")
-	elseif HerbID == 48 then
-        return joaat("PROVISION_WLDFLWR_BLOOD_FLOWER")
-	elseif HerbID == 49 then
-        return joaat("PROVISION_WLDFLWR_CARDINAL_FLOWER")
-	elseif HerbID == 50 then
-        return joaat("PROVISION_WLDFLWR_CHOCOLATE_DAISY")
-	elseif HerbID == 51 then
-        return joaat("PROVISION_WLDFLWR_CREEK_PLUM")
-	elseif HerbID == 52 then
-        return joaat("PROVISION_WLDFLWR_WILD_RHUBARB")
-	elseif HerbID == 53 then
-        return joaat("PROVISION_WLDFLWR_WISTERIA")
-		
-	elseif HerbID == 54 then
-        return joaat("PROVISION_GATOR_EGG")
-	elseif HerbID == 55 then
-        return joaat("PROVISION_GATOR_EGG")
-	elseif HerbID == 56 then
-        return joaat("PROVISION_GATOR_EGG")
-	elseif HerbID == 57 then
-        return joaat("PROVISION_DUCK_EGG")
-	elseif HerbID == 58 then
-        return joaat("PROVISION_GOOSE_EGG")
-	elseif HerbID == 59 then
-        return joaat("PROVISION_LOON_EGG")
-	elseif HerbID == 60 then
-        return joaat("PROVISION_VULTURE_EGG")
-		
-    else
-        return 0
-    end
-end
---]]
---[[
-function GetCompositeHash(HerbID)
-	if HerbID == 2 then
-        return joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_DEF")
-    elseif HerbID == 3 then
-        return joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_DEF")
-    elseif HerbID == 4 then
-        return joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF")
-    elseif HerbID == 5 then
-        return joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF")
-    elseif HerbID == 6 then
-        return joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF")
-    elseif HerbID == 7 then
-        return joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF")
-    elseif HerbID == 8 then
-        return joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF")
-    elseif HerbID == 11 then
-        return joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_DEF")
-    elseif HerbID == 12 then
-        return joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_DEF")
-    elseif HerbID == 13 then
-        return joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_DEF")
-    elseif HerbID == 15 then
-        return joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_DEF")
-    elseif HerbID == 16 then
-        return joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF")
-    elseif HerbID == 18 then
-        return joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_DEF")
-    elseif HerbID == 19 then
-        return joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_DEF")
-    elseif HerbID == 20 then
-        return joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_DEF")
-    elseif HerbID == 23 then
-        return joaat("COMPOSITE_LOOTABLE_MILKWEED_DEF")
-    elseif HerbID == 26 then
-        return joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_DEF")
-    elseif HerbID == 27 then
-        return joaat("COMPOSITE_LOOTABLE_OREGANO_DEF")
-    elseif HerbID == 28 then
-        return joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF")
-    elseif HerbID == 29 then
-        return joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_DEF")
-    elseif HerbID == 31 then
-        return joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF")
-    elseif HerbID == 33 then
-        return joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF")
-    elseif HerbID == 34 then
-        return joaat("COMPOSITE_LOOTABLE_RED_SAGE_DEF")
-    elseif HerbID == 37 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_DEF")
-    elseif HerbID == 38 then
-        return joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF")
-    elseif HerbID == 39 then
-        return joaat("COMPOSITE_LOOTABLE_WILD_CARROT_DEF")
-    elseif HerbID == 40 then
-        return joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_DEF")
-    elseif HerbID == 41 then
-        return joaat("COMPOSITE_LOOTABLE_WILD_MINT_DEF")
-    elseif HerbID == 42 then
-        return joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF")
-    elseif HerbID == 43 then
-        return joaat("COMPOSITE_LOOTABLE_YARROW_DEF")
-    elseif HerbID == 1 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
-    elseif HerbID == 9 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
-    elseif HerbID == 10 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
-    elseif HerbID == 14 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
-    elseif HerbID == 17 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
-    elseif HerbID == 21 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
-    elseif HerbID == 22 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
-    elseif HerbID == 24 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
-    elseif HerbID == 25 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
-    elseif HerbID == 30 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
-    elseif HerbID == 32 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
-    elseif HerbID == 35 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
-    elseif HerbID == 36 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
-		
-	elseif HerbID == 44 then
-        return joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_DEF")
-	elseif HerbID == 45 then
-        return joaat("COMPOSITE_LOOTABLE_AGARITA_DEF")
-	elseif HerbID == 46 then
-        return joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF")
-	elseif HerbID == 47 then
-        return joaat("COMPOSITE_LOOTABLE_BITTERWEED_DEF")
-	elseif HerbID == 48 then
-        return joaat("COMPOSITE_LOOTABLE_BLOOD_FLOWER_DEF")
-	elseif HerbID == 49 then
-        return joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF")
-	elseif HerbID == 50 then
-        return joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_DEF")
-	elseif HerbID == 51 then
-        return joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF")
-	elseif HerbID == 52 then
-        return joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_DEF")
-	elseif HerbID == 53 then
-        return joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF")
-		
-	elseif HerbID == 54 then
-        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF")
-	elseif HerbID == 55 then
-        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF")
-	elseif HerbID == 56 then
-        return joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF")
-	elseif HerbID == 57 then
-        return joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF")
-	elseif HerbID == 58 then
-        return joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF")
-	elseif HerbID == 59 then
-        return joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF")
-	elseif HerbID == 60 then
-        return joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF")
-	
-	
-    else
-        return 0
-    end
-end
-
-function GetHerbIDFromLootedHash(lootedComposite)
-	if lootedComposite == joaat("COMPOSITE_LOOTABLE_ALASKAN_GINSENG_ROOT_INTERACTABLE_DEF") then
-        return 2
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_AMERICAN_GINSENG_ROOT_INTERACTABLE_DEF") then
-        return 3
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BAY_BOLETE_DEF") then
-        return 4
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLACK_BERRY_DEF") then
-        return 5
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLACK_CURRANT_INTERACTABLE_DEF") then
-        return 6
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BURDOCK_ROOT_INTERACTABLE_DEF") then
-        return 7
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CHANTERELLES_DEF") then
-        return 8
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_COMMON_BULRUSH_INTERACTABLE_DEF") then
-        return 11
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CREEPING_THYME_INTERACTABLE_DEF") then
-        return 12
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_DESERT_SAGE_INTERACTABLE_DEF") then
-        return 13
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ENGLISH_MACE_INTERACTABLE_DEF") then
-        return 15
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_EVERGREEN_HUCKLEBERRY_DEF") then
-        return 16
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GOLDEN_CURRANT_INTERACTABLE_DEF") then
-        return 18
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_HUMMINGBIRD_SAGE_INTERACTABLE_DEF") then
-        return 19
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_INDIAN_TOBACCO_INTERACTABLE_DEF") then
-        return 20
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_MILKWEED_INTERACTABLE_DEF") then
-        return 23
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_OLEANDER_SAGE_INTERACTABLE_DEF") then
-        return 26
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_OREGANO_INTERACTABLE_DEF") then
-        return 27
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_PARASOL_MUSHROOM_DEF") then
-        return 28
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_PRAIRIE_POPPY_INTERACTABLE_DEF") then
-        return 29
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RAMS_HEAD_DEF") then
-        return 31
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF") then
-        return 33
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_RED_SAGE_INTERACTABLE_DEF") then
-        return 34
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_VANILLA_INTERACTABLE_DEF") then
-        return 37
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_INTERACTABLE_DEF") then
-        return 38
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_CARROT_INTERACTABLE_DEF") then
-        return 39
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_FEVERFEW_INTERACTABLE_DEF") then
-        return 40
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_MINT_INTERACTABLE_DEF") then
-        return 41
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WINTERGREEN_BERRY_DEF") then
-        return 42
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_YARROW_INTERACTABLE_DEF") then
-        return 43
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF") then
-        return 1
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF") then
-        return 9
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF") then
-        return 10
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF") then
-        return 14
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF") then
-        return 17
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF") then
-        return 21
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF") then
-        return 22
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF") then
-        return 24
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF") then
-        return 25
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF") then
-        return 30
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF") then
-        return 32
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF") then
-        return 35
-    elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF") then
-        return 36
-	
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_HARRIETUM_OFFICINALIS_INTERACTABLE_DEF") then
-        return 44
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_AGARITA_DEF") then
-        return 45
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_TEXAS_BONNET_INTERACTABLE_DEF") then
-        return 46
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BITTERWEED_INTERACTABLE_DEF") then
-        return 47
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_BLOODFLOWER_INTERACTABLE_DEF") then
-        return 48
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CARDINAL_FLOWER_INTERACTABLE_DEF") then
-        return 49
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CHOC_DAISY_INTERACTABLE_DEF") then
-        return 50
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_CREEKPLUM_DEF") then
-        return 51
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WILD_RHUBARB_INTERACTABLE_DEF") then
-        return 52
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_WISTERIA_DEF") then
-        return 53
-		
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF") then
-        return 54
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_4_DEF") then
-        return 55
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GATOR_EGG_5_DEF") then
-        return 56
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_DUCK_EGG_5_DEF") then
-        return 57
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_GOOSE_EGG_4_DEF") then
-        return 58
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_LOON_EGG_3_DEF") then
-        return 59
-	elseif lootedComposite == joaat("COMPOSITE_LOOTABLE_VULTURE_EGG_DEF") then
-        return 60
-
-		
-	else
-        return 0
-    end
-end
-
-function GetEntytiFromHerbID(HerbID)
-	if HerbID == 2 then
-        return -1194833913
-    elseif HerbID == 3 then
-        return -781771732
-    elseif HerbID == 4 then
-        return -1202590500
-    elseif HerbID == 5 then
-        return -550091683
-    elseif HerbID == 6 then
-        return -190820666
-    elseif HerbID == 7 then
-        return 63835692
-    elseif HerbID == 8 then
-        return -1524011012
-    elseif HerbID == 11 then
-        return -1291682103
-    elseif HerbID == 12 then
-        return 2129486088
-    elseif HerbID == 13 then
-        return 1640283709
-    elseif HerbID == 15 then
-        return -177017064
-    elseif HerbID == 16 then
-        return -231430744
-    elseif HerbID == 18 then
-        return -1298766667
-    elseif HerbID == 19 then
-        return 68963282
-    elseif HerbID == 20 then
-        return 316930447
-    elseif HerbID == 23 then
-        return -1944784826
-    elseif HerbID == 26 then
-        return 454655011
-    elseif HerbID == 27 then
-        return 2033030310
-    elseif HerbID == 28 then
-        return 926616681
-    elseif HerbID == 29 then
-        return -423117050
-    elseif HerbID == 31 then
-        return 76556053
-    elseif HerbID == 33 then
-        return -1326233925
-    elseif HerbID == 34 then
-        return -1333051172
-    elseif HerbID == 37 then
-        return 1195604412
-    elseif HerbID == 38 then
-        return -1019761233
-    elseif HerbID == 39 then
-        return -780853522
-    elseif HerbID == 40 then
-        return 561391114
-    elseif HerbID == 41 then
-        return -351933124
-    elseif HerbID == 42 then
-        return 1057523711
-    elseif HerbID == 43 then
-        return 918835244
-    elseif HerbID == 1 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_ACUNA_STAR_DEF")
-    elseif HerbID == 9 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_CIGAR_DEF")
-    elseif HerbID == 10 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_CLAM_SHELL_DEF")
-    elseif HerbID == 14 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_DRAGONS_DEF")
-    elseif HerbID == 17 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_GHOST_DEF")
-    elseif HerbID == 21 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_NIGHT_DEF")
-    elseif HerbID == 22 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_LADY_SLIPPER_DEF")
-    elseif HerbID == 24 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_MOCCASIN_DEF")
-    elseif HerbID == 25 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_NIGHT_SCENTED_DEF")
-    elseif HerbID == 30 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_QUEENS_DEF")
-    elseif HerbID == 32 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_RAT_TAIL_DEF")
-    elseif HerbID == 35 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPARROWS_DEF")
-    elseif HerbID == 36 then
-        return joaat("COMPOSITE_LOOTABLE_ORCHID_SPIDER_DEF")
-		
-	elseif HerbID == 44 then
-        return -317883624
-	elseif HerbID == 45 then
-        return -834461873
-	elseif HerbID == 46 then
-        return -2015527411
-	elseif HerbID == 47 then
-        return -1697318509
-	elseif HerbID == 48 then
-        return -1490607613
-	elseif HerbID == 49 then
-        return 1175863601
-	elseif HerbID == 50 then
-        return 988637426
-	elseif HerbID == 51 then
-        return -1964504874
-	elseif HerbID == 52 then
-        return -2029085880
-	elseif HerbID == 53 then
-        return -204942356
-	
-    else
-        return 0
-    end
-end
---]]
-
---exports('StartCreateComposite', StartCreateComposite)
 
 function DumpTable(tbl)
     for k, v in pairs(tbl) do
@@ -2420,7 +1409,7 @@ function ResetComposites()
 		DeleteSound(key)
 		DeleteEffect(key)
 		DeletePromptAndGroup(key)
-		Composite[key] = nil			
+		Composite[key] = nil		
 	end
 	for key, scenario in pairs(Config.FullLootedScenarioPoint) do
 		SetScenarioPointActive(scenario, true)
@@ -2428,6 +1417,7 @@ function ResetComposites()
 	end
 	ClearPedTasksImmediately(ped, true, true)
 	PromptDelete(PickupPrompt)
+	CompositePointCol = 1
 end
 
 RegisterNetEvent("rsg-composite:client:GetServerComposite")
@@ -2453,6 +1443,7 @@ function KeyFromCoords(vec)
     return string.format("%.3f:%.3f", vec.x, vec.y)
 end
 
+--[[
 function GetHerbCompositeNumEntities(compositeId, searchNum)
 	local struct = DataView.ArrayBuffer(256)
 	struct:SetInt32(0, searchNum) --указываем какое количество ENTITIES искать (5 хватает)
@@ -2472,7 +1463,9 @@ function GetHerbCompositeNumEntities(compositeId, searchNum)
             end
         end
     end
-	print("Entities2 = " .. json.encode(Entities2))
+	if Config.Debug then
+		print("Entities2 = " .. json.encode(Entities2))
+	end
 	return Entitys
 end
 
@@ -2524,6 +1517,7 @@ function GetHerbCompositeNumEntities3(scale)
 	end
 	return foundEntities
 end
+--]]
 
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------

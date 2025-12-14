@@ -162,11 +162,7 @@ CreateThread(function()
 						if ped == player then
 							if eventLoot.PlCoords and eventLoot.Model then
 								if IsValidHerbModel(eventLoot.Model) then
-									FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, eventLoot.Eat)
-								else
-									if Config.Debug then
-										print("Model is not a herb, ignoring event")
-									end
+									FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, not eventLoot.Eat)
 								end
 							end
 						end						
@@ -292,9 +288,13 @@ end)
 
 AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
-		if LocalPlayer.state.isLoggedIn then
-			TriggerEvent('RSGCore:Client:OnPlayerLoaded')
-			--print("onResourceStart")
+		if LocalPlayer.state.isLoggedIn then --это для перезапуска если в игре
+			--TriggerEvent('RSGCore:Client:OnPlayerLoaded')
+			RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
+				Config.FullLootedScenarioPoint = compositeData
+				playerSpawn = true	
+				startPointCheck()
+			end)
 		end
 	end
 end)

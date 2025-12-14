@@ -4,11 +4,10 @@ games {"rdr3"}
 
 author '@CKAJIA'
 description 'Herbs and Eggs'
-version '1.5.3'
+version '1.5.5'
 
 shared_scripts {
 	'@ox_lib/init.lua',
-	'@jo_libs/init.lua',
     "exports.js",
     'config.lua',
 }
@@ -28,7 +27,6 @@ server_scripts {
 
 exports {
     'NativeCreateComposite',
-    'NativeGetCompositeEntities',
 	'StartCreateComposite',
 	'FindPicupCompositeAndCoords'
 }
