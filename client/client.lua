@@ -81,9 +81,6 @@ function startPointCheck()
 			Wait(2000) -- 2 sec
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			
-			if not prePlayerPosition then
-				prePlayerPosition = playerPosition
-			end
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
 	
 				local scenarios = getLootScenarioHash(playerPosition, spawnRadius, 600)
@@ -108,6 +105,7 @@ function startPointCheck()
 end
 
 function PlayerMovedTooFar(currentPos, prevPos, radius)
+	if not prePlayerPosition then return true end --защита от нулевого вектора.
     local dist = #(currentPos - prevPos)  -- вычисляем расстояние между текущей и предыдущей позициями
     return dist > radius  -- возвращаем true, если расстояние больше заданного радиуса, иначе false
 end
