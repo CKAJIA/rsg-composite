@@ -14,22 +14,22 @@ local MAX_RECORD_IN_TABLE = 500 --на самом деле 500 точек дер
 local isBusy = false
 local isPickUp = false
 
-local CompositePointCol = 0
+local compositePointCol = 0
 local spawnCompositeNum = 0 --на случай если слишком много заспавнено и не очистилось
 
 function checkRecordAndClear(playerPosition)
 	local playerPos = playerPosition.xy
 	
 	-- Режим 1: Emergency - если критично много точек
-	if CompositePointCol > MAX_RECORD_IN_TABLE then		
+	if compositePointCol > MAX_RECORD_IN_TABLE then		
 		for key, value in pairs(Composite) do
 			local dist = #(playerPos - key)
 			if dist > DELETE_DISTANCE then --должна быть больше чем радиус спавна и радиус скрытия заспавненых которые в таблице
 				--print("Delete point = " .. key)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key] = nil
-				CompositePointCol = CompositePointCol - 1
-				if CompositePointCol < 0 then CompositePointCol = 0	end
+				compositePointCol = compositePointCol - 1
+				if compositePointCol < 0 then compositePointCol = 0	end
 			end
 		end
 		return
@@ -44,8 +44,8 @@ function checkRecordAndClear(playerPosition)
 			--а если все собрали то удаляем запись
 			if not HerbsRemains(key) then
 				Composite[key] = nil--убираем запись.
-				CompositePointCol = CompositePointCol - 1
-				if CompositePointCol < 0 then CompositePointCol = 0	end
+				compositePointCol = compositePointCol - 1
+				if compositePointCol < 0 then compositePointCol = 0	end
 				if Config.Debug then
 					print("No more composite in point. Delete record in Composite")
 				end
@@ -115,7 +115,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
             PointSpawn = false, CompositeId = {}, PackedSlots = packedSlots, HerbCoords = {},
             VegModifierHandle = {}, AttachEntity = nil, Entitys = {}, GroupPromt = nil, PickupPrompt = nil
         }
-		CompositePointCol = CompositePointCol + 1
+		compositePointCol = compositePointCol + 1
 		haveRecord = false
 	else
 		HerbID = Composite[pointCoords.xy].HerbID
@@ -1429,7 +1429,7 @@ function ResetComposites()
 	ClearPedTasksImmediately(ped, true, true)
 	PromptDelete(PickupPrompt)
 	
-	CompositePointCol = 0
+	compositePointCol = 0
 	spawnCompositeNum = 0
 	
 	PlaySoundCoordsTable = {}
