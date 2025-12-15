@@ -1,5 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
+local resourceRunning = false
 local playerSpawn = false
 local Composite = {}
 --local FullLootedScenarioPoint = {}
@@ -14,7 +15,7 @@ local isBusy = false
 local isPickUp = false
 
 local CompositePointCol = 0
-local spawnCompositeNum = 1 --на случай если слишком много заспавнено и не очистилось
+local spawnCompositeNum = 0 --на случай если слишком много заспавнено и не очистилось
 
 function checkRecordAndClear(playerPosition)
 	local playerPos = playerPosition.xy
@@ -28,7 +29,7 @@ function checkRecordAndClear(playerPosition)
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key] = nil
 				CompositePointCol = CompositePointCol - 1
-				if CompositePointCol < 1 then CompositePointCol = 1	end
+				if CompositePointCol < 0 then CompositePointCol = 0	end
 			end
 		end
 		return
@@ -44,7 +45,7 @@ function checkRecordAndClear(playerPosition)
 			if not HerbsRemains(key) then
 				Composite[key] = nil--убираем запись.
 				CompositePointCol = CompositePointCol - 1
-				if CompositePointCol < 1 then CompositePointCol = 1	end
+				if CompositePointCol < 0 then CompositePointCol = 0	end
 				if Config.Debug then
 					print("No more composite in point. Delete record in Composite")
 				end
@@ -445,7 +446,7 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 			NativeDeleteComposite(compositeId[i])
 			if compositeId[i] > 0 then
 				spawnCompositeNum = spawnCompositeNum - 1
-				if spawnCompositeNum < 1 then spawnCompositeNum = 1 end
+				if spawnCompositeNum < 0 then spawnCompositeNum = 0 end
 				--print(spawnCompositeNum)
 			end
 		end
@@ -536,7 +537,7 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 end
 
 CreateThread(function()
-    while true do
+    while resourceRunning do
 		Wait(150)
 		if playerSpawn then
 			local playerPosition = GetEntityCoords(PlayerPedId())
@@ -707,7 +708,7 @@ function addEffectAndCheck(pointCoords, HerbID)
 		end
 		
 		CreateThread(function()
-			while true do
+			while resourceRunning do
 			Wait(100)			
 				if Citizen.InvokeNative(0x45AB66D02B601FA7, player) then
                     -- Eagle Eyes : ON
@@ -1386,9 +1387,19 @@ end
 --При перезагрузке очищает все что вносили в таблицу
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
+		resourceRunning = false
+		playerSpawn = false
 		ResetComposites()
 	end
 )
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+	if LocalPlayer.state.isLoggedIn then 
+		playerSpawn = true 
+		resourceRunning = true
+	end
+end)
 
 
 function ResetComposites()
@@ -1417,7 +1428,13 @@ function ResetComposites()
 	end
 	ClearPedTasksImmediately(ped, true, true)
 	PromptDelete(PickupPrompt)
-	CompositePointCol = 1
+	
+	CompositePointCol = 0
+	spawnCompositeNum = 0
+	
+	PlaySoundCoordsTable = {}
+	PlayEffectCoordsTable = {}
+	Composite = {}
 end
 
 RegisterNetEvent("rsg-composite:client:GetServerComposite")
