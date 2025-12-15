@@ -7,6 +7,12 @@ Config.UseArthurVomitAnimSceneForMen = true
 
 Config.PromtName = 'Взять'
 
+--Что использовать для начисления опыта
+--Можно вставить свой экспорт из другого скрипта
+Config.serverUpdateExp = function(source, expName, amount, duration)
+    return exports['rsg-statistics']:updatexp(source, expName, amount, duration)
+end
+
 Config.composite_scenario = {
 
 	[2017118308] = {herbHesh = "COMPOSITE_LOOTABLE_AGARITA_DEF",  HerbID = 45},					--Магония
@@ -97,7 +103,15 @@ Config.Composites = {
 				Thirst = {Min = 5, Max = 10}, 
 				Clean = {Min = 45, Max = 50}, 
 				Stress = {Min = -10, Max = -15} 
-			} 
+			},
+			eatExp = {
+				["herbalist"] = {Min = 2, Max = 3},
+				["crafting"] = {Min = 1, Max = 1},
+			},
+		},
+		lootExp = {
+			["herbalist"] = {Min = 2, Max = 3},
+			["crafting"] = {Min = 1, Max = 1},
 		},
     },
     [3] = { --Американский женьшень
@@ -113,7 +127,15 @@ Config.Composites = {
 				Thirst = {Min = 5, Max = 10}, 
 				Clean = {Min = 45, Max = 50}, 
 				Stress = {Min = -10, Max = -15}
-			} 
+			},
+			eatExp = {
+				["herbalist"] = {Min = 2, Max = 3},
+				["crafting"] = {Min = 1, Max = 1},
+			},
+		},
+		lootExp = {
+			["herbalist"] = {Min = 2, Max = 3},
+			["crafting"] = {Min = 1, Max = 1},
 		},
     },
     [4] = { --Польский гриб

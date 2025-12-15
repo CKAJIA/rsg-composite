@@ -66,7 +66,8 @@ AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
         local _source = source
 		local Player = RSGCore.Functions.GetPlayer(_source)
 		local data = GetCompositeData(HerbID)
-		
+
+
         if data and data.item and data.item ~= "" then
 			local item = data.item
 			Player.Functions.AddItem(item, amount) --amount количество
@@ -85,6 +86,12 @@ AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
 							TriggerClientEvent("rsg-inventory:client:ItemBox", _source, RSGCore.Shared.Items[reward.item], "add")
 						end
 					end
+				end
+			end
+			if data.lootExp then
+				for expName, exp in pairs(data.lootExp) do
+					local eAmount = math.random(exp.Min, exp.Max)
+					Config.serverUpdateExp(_source, expName, eAmount, 2000)
 				end
 			end
 		else
@@ -117,6 +124,12 @@ AddEventHandler("rsg-composite:server:Eating", function(HerbID)
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
         end
+		if data.eat and data.eat.eatExp then
+			for expName, exp in pairs(data.eat.eatExp) do
+				local eAmount = math.random(exp.Min, exp.Max)
+				Config.serverUpdateExp(_source, expName, eAmount, 2000)
+			end
+		end
     end
 )
 
