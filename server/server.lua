@@ -75,8 +75,8 @@ AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
 			local noticeString = ""
 			if amount > 1 then noticeString = amount .. "x " end
-			--TriggerClientEvent('rNotify:ShowAdvancedRightNotification', source, RSGCore.Shared.Items[item].label, "pm_collectors_bag_mp" , "provision_wldflwr_wild_rhubarb" , "COLOR_PURE_WHITE", 4000)
-			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source, noticeString .. RSGCore.Shared.Items[item].label, GetDictTexture(HerbID) , item, GetColorTexture(HerbID, true), 2000, 0, 1)
+			--TriggerClientEvent('rNotify:ShowAdvancedRightNotification', _source, RSGCore.Shared.Items[item].label, "pm_collectors_bag_mp" , "provision_wldflwr_wild_rhubarb" , "COLOR_PURE_WHITE", 4000)
+			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', _source, noticeString .. RSGCore.Shared.Items[item].label, GetDictTexture(HerbID), item, GetColorTexture(HerbID, true), 2000, 0, 1)
 			if data.rewards and #data.rewards > 0 then
 				for _, reward in pairs(data.rewards) do
 					local chance = math.random(1, 100)
@@ -168,8 +168,8 @@ end)
 
 
 
-RegisterServerEvent('rsg-composite:server:saveGatheredPoint')
-AddEventHandler('rsg-composite:server:saveGatheredPoint', function(pointkey, scenario)
+RegisterServerEvent('rsg-composite:server:SaveGatheredPoint')
+AddEventHandler('rsg-composite:server:SaveGatheredPoint', function(pointkey, scenario)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     local citizenid = Player.PlayerData.citizenid	
@@ -182,7 +182,7 @@ AddEventHandler('rsg-composite:server:saveGatheredPoint', function(pointkey, sce
 end)
 
 -- get plant
-RSGCore.Functions.CreateCallback('rsg-composite:server:getPlayerComposites', function(source, cb)
+RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
 	local playerId = source
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid

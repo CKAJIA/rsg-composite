@@ -1,7 +1,7 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 local playerSpawn = false
-local spawnRadius = 100.0--100.0
+local SPAWN_RADIUS = 100.0--100.0
 local prePlayerPosition = nil
 local eventLoot = {PlCoords = nil, Model = nil, Eat = false}
 local spawnedScenariopoint = {}
@@ -11,7 +11,7 @@ local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 
 AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)
-	RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
+	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 		Config.FullLootedScenarioPoint = compositeData
 		playerSpawn = true	
 		startPointCheck()
@@ -83,7 +83,7 @@ function startPointCheck()
 			
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
 	
-				local scenarios = getLootScenarioHash(playerPosition, spawnRadius, 600)
+				local scenarios = getLootScenarioHash(playerPosition, SPAWN_RADIUS, 600)
 				for _, scenarioData in ipairs(scenarios) do
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
 					local pointHeading = GetScenarioPointHeading(scenarioData.scenario, true)
@@ -122,6 +122,7 @@ CreateThread(function()
 			if HasAnimEventFired(player, `EFFECTPLANTBLIP`) or HasAnimEventFired(player, `ADDEGG`) then
 				eventLoot.PlCoords = GetEntityCoords(player)--срабатывает и при съедани вначале этот ивент потом EATPLANT
 				--print("EFFECTPLANTBLIP")
+				--local value = Citizen.InvokeNative(0x678D3226CF70B9C8, player, false) --на самом деле получем Entity кого собрали.
 			end
 	
 			if HasAnimEventFired(player, `EATPLANT`) then
@@ -288,7 +289,7 @@ AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
 		if LocalPlayer.state.isLoggedIn then --это для перезапуска если в игре
 			--TriggerEvent('RSGCore:Client:OnPlayerLoaded')
-			RSGCore.Functions.TriggerCallback('rsg-composite:server:getPlayerComposites', function(compositeData)
+			RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 				Config.FullLootedScenarioPoint = compositeData
 				playerSpawn = true	
 				startPointCheck()
