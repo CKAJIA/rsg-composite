@@ -3,10 +3,10 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 local playerSpawn = false
 local Composite = {}
 local EagleEyeEffects = {}
-local DELETE_DISTANCE = 1500.0
+local DELETE_DISTANCE = 2000.0
 local NEARBY_DISTANCE = 150.0
-local EMERGENCY_DESPAWN_DISTANCE = 200.0
-local MAX_SPAWN_COMPOSITE = 120 --180 маскимально можно за раз спавнить
+local EMERGENCY_DESPAWN_DISTANCE = 625.0
+local MAX_SPAWN_COMPOSITE = 160 --180 маскимально можно за раз спавнить
 local PlaySoundCoordsTable = {}
 local PlayEffectCoordsTable = {}
 local MAX_RECORD_IN_TABLE = 500 --на самом деле 500 точек держится в таблице.
@@ -70,7 +70,7 @@ function checkRecordAndClear(playerPosition)
 		for key, value in pairs(Composite) do
 			local dist = #(playerPos - key)
 			if dist >= EMERGENCY_DESPAWN_DISTANCE then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-				print("Emergency Despawn point = " .. key)
+				print("Emergency Despawn point = " .. tostring(key))
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key].CompositeId = {}
 				Composite[key].VegModifierHandle = {}
@@ -173,7 +173,7 @@ function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, pac
         if packedSlots[index] ~= nil then
             RequestAndWaitForComposite(compositeHash)
             local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
-            if compositeId and compositeId ~= -1 then
+            if compositeId and compositeId > 0 then
                 Composite[pointCoords.xy].CompositeId[index] = compositeId
                 Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
                 Composite[pointCoords.xy].PointSpawn = true
@@ -470,7 +470,6 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 			if compositeId[i] > 0 then
 				spawnCompositeNum = spawnCompositeNum - 1
 				if spawnCompositeNum < 0 then spawnCompositeNum = 0 end
-				--print(spawnCompositeNum)
 			end
 			
 			if Config.Debug then
@@ -481,6 +480,7 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 			end
 		end
 	end
+	
 	for i = 1, 4 do
 		if vegModifierHandle[i] and vegModifierHandle[i] ~= 0 then
 			RemoveVegModifierSphere(vegModifierHandle[i], 1)
@@ -488,15 +488,23 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 	end
 	--удаляем композит от орхидей
 	--потому что они состоят из 2 entity
-	for _, value in ipairs(entitys) do
-		if value then
-			--SetEntityAsMissionEntity(value, true, true)
-			SetEntityAsNoLongerNeeded(value)
-			DeleteEntity(value)
+	if entitys then
+		for _, value in ipairs(entitys) do
+			if value then
+				--SetEntityAsMissionEntity(value, true, true)
+				SetEntityAsNoLongerNeeded(value)
+				DeleteEntity(value)
+			end
 		end
 	end
+	
 	DeletePromptAndGroup(coordsXY)
-	Composite[coordsXY].Entitys = {}
+	EagleEyeEffects[coordsXY] = nil
+	if Composite[coordsXY] then
+		Composite[coordsXY].Entitys = {} 
+		Composite[coordsXY].AttachEntity = nil
+	end
+		
 	
 	--compositePointCol = compositePointCol - 1
 	--if compositePointCol < 0 then compositePointCol = 0	end
@@ -646,7 +654,7 @@ function PicUpOrchid(pointCoords, pickupPrompt, pickTime, herbID)
 		local comp = Composite[pointCoords.xy]
 		if not comp then return end
 		local entity = comp.AttachEntity
-		if not (entity and DoesEntityExist(entity)) then return end
+		if not entity or not DoesEntityExist(entity) then return end
 		isPickUp = true --именно после проверки entity
 		--удаляем prompt
 		DeletePromptAndGroup(pointCoords.xy)
@@ -1516,39 +1524,22 @@ function ResetComposites()
 	for key, value in pairs(Composite) do
 		deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 		
---		for _, data in ipairs(value.CompositeId) do
---			Citizen.InvokeNative(0x5758B1EE0C3FD4AC, data, 0) -- Удалить composite
---		end
---		for _, data in ipairs(value.VegModifierHandle) do
---			RemoveVegModifierSphere(data, 1) -- Удалить сферу которая удаляет растения и т.д. вокруг композита
---		end
---		if value.Entitys then
---			for _, data in ipairs(value.Entitys) do
---				SetEntityAsMissionEntity(data, true, true)
---				DeleteEntity(data)
---			end
---			Composite[key].AttachEntity = nil
---		end
---		DeleteSound(key)
---		DeleteEffect(key)
---		DeletePromptAndGroup(key)
 		Composite[key] = nil
-		
-		compositePointCol = compositePointCol - 1
-		if compositePointCol < 0 then compositePointCol = 0	end
 	end
 	for key, scenario in pairs(Config.FullLootedScenarioPoint) do
 		SetScenarioPointActive(scenario, true)
 		Config.FullLootedScenarioPoint[key] = nil
 	end
-	ClearPedTasksImmediately(ped, true, true)
-	PromptDelete(PickupPrompt)
+	ClearPedTasksImmediately(PlayerPedId(), true, true)
+	--PromptDelete(PickupPrompt)
+	--PickupPrompt = nil
 	
 	compositePointCol = 0
 	spawnCompositeNum = 0
 	
 	PlaySoundCoordsTable = {}
 	PlayEffectCoordsTable = {}
+	EagleEyeEffects = {}
 	Composite = {}
 end
 
