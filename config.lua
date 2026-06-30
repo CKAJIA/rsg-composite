@@ -431,7 +431,7 @@ Config.Composites = {
 			}
 		},
         rewards = { 
-			{chance = 25, item = 'stew', amountMin = 1, amountMax = 3}
+			{chance = 50, item = 'stew', amountMin = 1, amountMax = 3}
 		},
     },
     [40] = { --Дикий пиретрум

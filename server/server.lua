@@ -71,10 +71,7 @@ AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
         if data and data.item and data.item ~= "" then
 			local item = data.item
 			Player.Functions.AddItem(item, amount) --amount количество
-			--нужно чтобы обновлять в быстрой панели.
-			--из этого ивента приходит обновление хотбара
-			--true в конце чтобы не показывать двойное уведомление
-			TriggerClientEvent('rsg-inventory:client:ItemBox', _source, RSGCore.Shared.Items[item], "add", amount, true)
+			--TriggerClientEvent('rsg-inventory:client:ItemBox', _source, RSGCore.Shared.Items[item], "add", amount)
 			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
 			local noticeString = ""
 			if amount > 1 then noticeString = amount .. "x " end
