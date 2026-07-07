@@ -1649,56 +1649,26 @@ RegisterNetEvent('rsg-composite:client:UIFeedPostSampleToastRight')
 AddEventHandler('rsg-composite:client:UIFeedPostSampleToastRight', function(text, dict, icon, text_color, duration, quality, pick)
     local _dict = dict
     local _icon = icon
-    if not LoadTexture(_dict) then
-        _dict = "generic_textures"
-        LoadTexture(_dict)
-        _icon = "tick"
-    end
-    UIFeedPostSampleToastRight(tostring(text), tostring(_dict), tostring(_icon), tostring(text_color), tonumber(duration), tonumber(quality), tonumber(pick))
+    if LoadTexture(_dict) then
+		exports["rsg-composite"]:showAdvancedRightNotification(text, _dict, _icon, text_color or nil, duration or 2000, quality or 0, pick or 1)
+	end
 end)
 
-function UIFeedPostSampleToastRight(_text, _dict, icon, text_color, duration, quality, pick)
-    local text = CreateVarString(10, "LITERAL_STRING", _text)
-    local dict = CreateVarString(10, "LITERAL_STRING", _dict)
-	local sdict = CreateVarString(10, "LITERAL_STRING", "Transaction_Feed_Sounds")
-	local sound = CreateVarString(10, "LITERAL_STRING", "Transaction_Positive")
-	if pick == 0 then
-		sdict = CreateVarString(10, "LITERAL_STRING", "Transaction_Feed_Sounds")
-		sound = CreateVarString(10, "LITERAL_STRING", "Transaction_Negative")
-	end
-
-    local struct1 = DataView.ArrayBuffer(8*7)
-    struct1:SetInt32(8*0,duration)
-    struct1:SetInt64(8*1,bigInt(sdict))
-    struct1:SetInt64(8*2,bigInt(sound))
-
-    local struct2 = DataView.ArrayBuffer(8*10)
-    struct2:SetInt64(8*1,bigInt(text))
-    struct2:SetInt64(8*2,bigInt(dict))
-    struct2:SetInt64(8*3,bigInt(joaat(icon)))
-	--struct2:SetInt64(8*4,bigInt(0))
-    struct2:SetInt64(8*5,bigInt(joaat(text_color or "COLOR_WHITE")))
-    struct2:SetInt32(8*6,quality or 0)
-
-    Citizen.InvokeNative(0xB249EBCB30DD88E0,struct1:Buffer(),struct2:Buffer(),1)
-end
-
 function LoadTexture(dict)
-    if Citizen.InvokeNative(0x7332461FC59EB7EC, dict) then
-        RequestStreamedTextureDict(dict, true)
-        while not HasStreamedTextureDictLoaded(dict) do
-            Wait(1)
-        end
-        return true
-    else
-        return false
-    end
-end
-
-function bigInt(text)
-    local string1 =  DataView.ArrayBuffer(16)
-    string1:SetInt64(0,text)
-    return string1:GetInt64(0)
+	if DoesStreamedTextureDictExist(dict) then
+		if not HasStreamedTextureDictLoaded(dict) then
+			RequestStreamedTextureDict(dict, true)
+			local timeout = GetGameTimer() + 1000
+			while not HasStreamedTextureDictLoaded(dict) do
+				if GetGameTimer() > timeout then
+					return false
+				end
+				Wait(1)
+			end	
+		end
+	end
+	
+	return true
 end
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
