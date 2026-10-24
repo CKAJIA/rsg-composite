@@ -9,7 +9,7 @@ local SCENARIO_BUF_SIZE = 8192
 local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 
 
-AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)
 	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 		Config.FullLootedScenarioPoint = compositeData
@@ -18,8 +18,7 @@ AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()
 	end)	
 end)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload')
-AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
 end)
 

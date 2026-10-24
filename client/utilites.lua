@@ -1550,13 +1550,12 @@ end)
 
 
 
-AddEventHandler('RSGCore:Client:OnPlayerLoaded', function()	
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)
 	playerSpawn = true
 end)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload')
-AddEventHandler('RSGCore:Client:OnPlayerUnload', function()
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
 	ResetComposites()
 end)
