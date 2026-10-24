@@ -20,7 +20,7 @@ exports('NativeCreateComposite', (compositeHash, x, y, z, heading, groundSetting
     return [compositeId, outSlot];  // outSlot = твой outValue!
 });
 //ПРИМЕР
-//local result = exports["rsg-composite-v2"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
+//local result = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
 //local compositeId = result[1]
 //local outSlot = result[2]
 */

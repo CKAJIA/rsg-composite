@@ -5,7 +5,7 @@ local CompositeLoaded = false
 
 local function EnsureCompositesTable()
     local sql = [[
-        CREATE TABLE IF NOT EXISTS player_composites_v2 (
+        CREATE TABLE IF NOT EXISTS player_composites (
             id INT NOT NULL AUTO_INCREMENT,
             citizenid VARCHAR(50) NOT NULL,
             pointkey VARCHAR(32) NOT NULL,
@@ -80,7 +80,7 @@ local function GiveCompositeReward(source, Player, HerbID, amount)
 	end
 
 	local noticeString = amount > 1 and (amount .. 'x ') or ''
-	TriggerClientEvent('rsg-composite-v2:client:UIFeedPostSampleToastRight', source,
+	TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source,
 		noticeString .. itemData.label, GetDictTexture(HerbID), item, GetColorTexture(HerbID, true), 2000, 0, 1)
 
 	if data.rewards and #data.rewards > 0 then
@@ -103,7 +103,7 @@ local function GiveCompositeReward(source, Player, HerbID, amount)
 	return true
 end
 
-RegisterNetEvent('rsg-composite-v2:server:Gathered', function(HerbID, amount)
+RegisterNetEvent('rsg-composite:server:Gathered', function(HerbID, amount)
 	local src = source
 	local Player = RSGCore.Functions.GetPlayer(src)
 	HerbID = tonumber(HerbID)
@@ -112,8 +112,8 @@ RegisterNetEvent('rsg-composite-v2:server:Gathered', function(HerbID, amount)
 	GiveCompositeReward(src, Player, HerbID, amount)
 end)
 --[[
-RegisterNetEvent("rsg-composite-v2:server:AdditionRewards")
-AddEventHandler("rsg-composite-v2:server:AdditionRewards", function(item, amount)
+RegisterNetEvent("rsg-composite:server:AdditionRewards")
+AddEventHandler("rsg-composite:server:AdditionRewards", function(item, amount)
         local _source = source
 		local Player = RSGCore.Functions.GetPlayer(_source)
         if item and amount then
@@ -126,13 +126,13 @@ AddEventHandler("rsg-composite-v2:server:AdditionRewards", function(item, amount
     end
 )
 --]]
-RegisterNetEvent("rsg-composite-v2:server:Eating")
-AddEventHandler("rsg-composite-v2:server:Eating", function(HerbID)
+RegisterNetEvent("rsg-composite:server:Eating")
+AddEventHandler("rsg-composite:server:Eating", function(HerbID)
         local _source = source
 		local data = GetCompositeData(HerbID)
         
 		if data and data.item and data.item ~= "" then
-			TriggerClientEvent('rsg-composite-v2:client:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[data.item].label, GetDictTexture(HerbID) , data.item, GetColorTexture(HerbID, false), 2000, 0, 0)
+			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[data.item].label, GetDictTexture(HerbID) , data.item, GetColorTexture(HerbID, false), 2000, 0, 0)
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
         end
@@ -145,31 +145,31 @@ AddEventHandler("rsg-composite-v2:server:Eating", function(HerbID)
     end
 )
 
-RegisterNetEvent("rsg-composite-v2:server:AddToServerPoint")
-AddEventHandler("rsg-composite-v2:server:AddToServerPoint", function(key, CompositePoint)
+RegisterNetEvent("rsg-composite:server:AddToServerPoint")
+AddEventHandler("rsg-composite:server:AddToServerPoint", function(key, CompositePoint)
 		local playerId = source -- Получаем ID игрока, отправившего запрос
 		if ServerComposite[key] == nil then
 			ServerComposite[key] = CompositePoint
 			--print("HerbCoords[1] = " .. CompositePoint.HerbID)
 		end
 		--local compositeTable = ServerComposite[key]
-		TriggerClientEvent("rsg-composite-v2:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
     end
 )
 --[[
-RegisterServerEvent("rsg-composite-v2:server:RequestCompositeFromClient")
-AddEventHandler("rsg-composite-v2:server:RequestCompositeFromClient", function(key)
+RegisterServerEvent("rsg-composite:server:RequestCompositeFromClient")
+AddEventHandler("rsg-composite:server:RequestCompositeFromClient", function(key)
     local playerId = source -- Получаем ID игрока, отправившего запрос
 	if ServerComposite[key] then
 		local compositeTable = ServerComposite[key] -- Получаем нужную таблицу
 		--print("HerbID = " .. compositeTable.HerbID)
-		TriggerClientEvent("rsg-composite-v2:client:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
 	end
 end)
 ]]--
 
-RegisterServerEvent("rsg-composite-v2:server:SendMessage")
-AddEventHandler("rsg-composite-v2:server:SendMessage", function(ctitle, cmessage)
+RegisterServerEvent("rsg-composite:server:SendMessage")
+AddEventHandler("rsg-composite:server:SendMessage", function(ctitle, cmessage)
 	local _source = source
     TriggerClientEvent('ox_lib:notify', _source, {title = ctitle, description = cmessage, type = 'inform', duration = 3000 })
 end)
@@ -180,13 +180,13 @@ end)
 
 
 
-RegisterServerEvent('rsg-composite-v2:server:SaveGatheredPoint')
-AddEventHandler('rsg-composite-v2:server:SaveGatheredPoint', function(pointkey, scenario)
+RegisterServerEvent('rsg-composite:server:SaveGatheredPoint')
+AddEventHandler('rsg-composite:server:SaveGatheredPoint', function(pointkey, scenario)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     local citizenid = Player.PlayerData.citizenid	
 
-	MySQL.Async.execute('INSERT INTO player_composites_v2 (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
+	MySQL.Async.execute('INSERT INTO player_composites (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
 		['@citizenid'] = citizenid,
 		['@pointkey'] = pointkey,
 		['@scenario'] = scenario
@@ -208,14 +208,14 @@ local function getTreeEggSpeciesFromModel(model)
 	return nil
 end
 
-RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, scenario, model)
+RegisterNetEvent('rsg-composite:server:GatherTreeEgg', function(pointkey, scenario, model)
 	local src = source
 	local Player = RSGCore.Functions.GetPlayer(src)
 	local species = getTreeEggSpeciesFromModel(model)
 	local keyX, keyY
 	local scenarioId = tonumber(scenario)
 	
-	print("rsg-composite-v2:server:GatherTreeEgg")
+	print("rsg-composite:server:GatherTreeEgg")
 
 	if type(pointkey) == 'string' then
 		local xText, yText = pointkey:match('^([%-]?%d+%.%d+):([%-]?%d+%.%d+)$')
@@ -223,7 +223,7 @@ RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, sce
 	end
 
 	local function respond(success, reason)
-		TriggerClientEvent('rsg-composite-v2:client:TreeEggGatherResult', src, success, pointkey, tonumber(scenario), reason)
+		TriggerClientEvent('rsg-composite:client:TreeEggGatherResult', src, success, pointkey, tonumber(scenario), reason)
 	end
 
 	local compositeData = species and species.herbID and GetCompositeData(species.herbID)
@@ -254,13 +254,13 @@ RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, sce
 	local ok, result = pcall(function()
 		-- The unique citizen/point key makes a pickup persistent and prevents duplicate rewards.
 		return MySQL.insert.await(
-			'INSERT IGNORE INTO player_composites_v2 (citizenid, pointkey, scenario) VALUES (?, ?, ?)',
+			'INSERT IGNORE INTO player_composites (citizenid, pointkey, scenario) VALUES (?, ?, ?)',
 			{ Player.PlayerData.citizenid, pointkey, scenarioId }
 		)
 	end)
 	if not ok then
 		treeEggClaimsInProgress[claimKey] = nil
-		print(('[rsg-composite-v2] Tree egg DB save failed: %s'):format(tostring(result)))
+		print(('[rsg-composite] Tree egg DB save failed: %s'):format(tostring(result)))
 		respond(false, 'database_error')
 		return
 	end
@@ -277,7 +277,7 @@ RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, sce
 	--и получится что снова заспанится точка- так можно спавнить постоянно
 	--if not GiveCompositeReward(src, Player, species.herbID, compositeData.pickupAmount or 1) then
 	--	MySQL.query.await(
-	--		'DELETE FROM player_composites_v2 WHERE citizenid = ? AND pointkey = ?',
+	--		'DELETE FROM player_composites WHERE citizenid = ? AND pointkey = ?',
 	--		{ Player.PlayerData.citizenid, pointkey }
 	--	)
 	--	treeEggClaimsInProgress[claimKey] = nil
@@ -289,11 +289,11 @@ RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, sce
 end)
 
 -- get plant
-RSGCore.Functions.CreateCallback('rsg-composite-v2:server:GetPlayerComposites', function(source, cb)
+RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
 	local playerId = source
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid
-	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites_v2 WHERE citizenid = @citizenid', { 
+	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites WHERE citizenid = @citizenid', { 
 		['@citizenid'] = citizenid 
 	})
 
@@ -322,7 +322,7 @@ AddEventHandler(
     "RSGCore:Client:OnPlayerLoaded",
     function(source, user_id, isFirstSpawn)
         if isFirstSpawn then
-            TriggerClientEvent("rsg-composite-v2:SetPopSuppressed", source, popSuppressed)
+            TriggerClientEvent("rsg-composite:SetPopSuppressed", source, popSuppressed)
         end
     end
 )
@@ -335,7 +335,7 @@ CreateUseableItem = function()
 			RSGCore.Functions.CreateUseableItem(v.item, function(source, item)
 				local Player = RSGCore.Functions.GetPlayer(source)
 				if Player.Functions.RemoveItem(v.item, 1, item.slot) then
-					TriggerClientEvent("rsg-composite-v2:client:Eating", source, k, v.item) -- передача ключа k - HerbID
+					TriggerClientEvent("rsg-composite:client:Eating", source, k, v.item) -- передача ключа k - HerbID
 				end
 			end)
 		end
@@ -350,7 +350,7 @@ CreateUseableItem()
 
 -- Функция для очистки таблицы
 local function clearTableComposite()
-    MySQL.Async.execute('TRUNCATE TABLE player_composites_v2')
+    MySQL.Async.execute('TRUNCATE TABLE player_composites')
 end
 
 -- Планирование очистки таблицы в 6:00 утра каждый день

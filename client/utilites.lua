@@ -297,8 +297,8 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 			packedSlots = GenerateSinglePackedCompositeSlot(SpawnCol, variantMax)
 		end	
 		--serverComposite[pointCoords.xy] = { HerbID = HerbID, CompositeHash = compositeHash, PointCoords = pointCoords, PointHeading = pointHeading, PackedSlots = packedSlots }
-		--TriggerServerEvent("rsg-composite-v2:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
-		TriggerServerEvent("rsg-composite-v2:server:AddToServerPoint", 
+		--TriggerServerEvent("rsg-composite:server:AddToServerPoint", pointCoords.xy, serverComposite[pointCoords.xy])
+		TriggerServerEvent("rsg-composite:server:AddToServerPoint", 
 		pointCoords.xy, 
 		{
             HerbID = HerbID,
@@ -502,7 +502,7 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
 				compositeHeading = correctHeading(Heading + ((index - 1) * math.random(0, 90)))
 			end
 			
-			compositeId = exports["rsg-composite-v2"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, compositeHeading, onGround, -1)
+			compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, compositeHeading, onGround, -1)
 			
 			if Config.Debug then
 				print(("Spawn try | compositeId=%s | spawnCompositeNum=%s | herbCoords=vec3(%.2f, %.2f, %.2f) | slot=%s"):format(
@@ -926,14 +926,14 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     local amount = GetHerbPicupAmountID(HerbID)
     if isPickup then
 		--мы собрали
-        TriggerServerEvent("rsg-composite-v2:server:Gathered", HerbID, amount)
+        TriggerServerEvent("rsg-composite:server:Gathered", HerbID, amount)
 		if Config.Debug then
 			print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. amount)
 		end
     else
 		--мы съели
         Eating(HerbID)
-        TriggerServerEvent("rsg-composite-v2:server:Eating", HerbID)
+        TriggerServerEvent("rsg-composite:server:Eating", HerbID)
         if not Config.Composites[HerbID].eat.isPoison then
             PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
         end
@@ -960,7 +960,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
         SetScenarioPointActive(nearestScenario, false)
 
         Config.FullLootedScenarioPoint[KeyFromCoords(key)] = nearestScenario
-        TriggerServerEvent("rsg-composite-v2:server:SaveGatheredPoint", KeyFromCoords(key), nearestScenario)
+        TriggerServerEvent("rsg-composite:server:SaveGatheredPoint", KeyFromCoords(key), nearestScenario)
 		if Config.Debug then
 			print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
 		end
@@ -1052,7 +1052,7 @@ function Eating(herbID)
 	end
 end
 
-RegisterNetEvent("rsg-composite-v2:client:Eating", function(herbID, itemName)
+RegisterNetEvent("rsg-composite:client:Eating", function(herbID, itemName)
     if isBusy then
         return
     else
@@ -1065,7 +1065,7 @@ RegisterNetEvent("rsg-composite-v2:client:Eating", function(herbID, itemName)
         end
         Wait(750)        
         Eating(herbID)
-		TriggerServerEvent("rsg-composite-v2:server:Eating", herbID)
+		TriggerServerEvent("rsg-composite:server:Eating", herbID)
 		TriggerEvent("rsg-inventory:client:ItemBox", RSGCore.Shared.Items[itemName], "remove")
 		if not Config.Composites[herbID].eat.isPoison then
 			PlaySoundFrontend("Core_Full", "Consumption_Sounds", true, 0)
@@ -1218,7 +1218,7 @@ end
 	if RSGCore.Functions.HasItem('weapon_melee_knife', 1) then			
 		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), joaat('weapon_melee_knife'), 0, false, true)
 	else	
-		TriggerServerEvent("rsg-composite-v2:server:SendMessage", 'Купите нож', 'Вам нужно купить или создать нож!')
+		TriggerServerEvent("rsg-composite:server:SendMessage", 'Купите нож', 'Вам нужно купить или создать нож!')
 	end
 end
 --]]
@@ -1448,7 +1448,7 @@ end
 
 function NativeDisplayCompositePickuptThisFrame(composite, display)
     Citizen.InvokeNative(0x40D72189F46D2E15, composite, display)
-	--TriggerServerEvent('rsg-composite-v2:server:Gathered')
+	--TriggerServerEvent('rsg-composite:server:Gathered')
 end
 
 function EagleEyeSetCustomEntityTint(entity, red, green, blue)
@@ -1511,8 +1511,8 @@ function ResetComposites()
 	Composite = {}
 end
 
-RegisterNetEvent("rsg-composite-v2:client:GetServerComposite")
-AddEventHandler("rsg-composite-v2:client:GetServerComposite", function(key, compositeTable)
+RegisterNetEvent("rsg-composite:client:GetServerComposite")
+AddEventHandler("rsg-composite:client:GetServerComposite", function(key, compositeTable)
 	StartCreateComposite(compositeTable.HerbID, compositeTable.CompositeHash, compositeTable.PointCoords, compositeTable.PointHeading, compositeTable.PackedSlots)
 end)
 
@@ -1612,12 +1612,12 @@ end
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
 --------------------------------------------------------------------------------
-RegisterNetEvent('rsg-composite-v2:client:UIFeedPostSampleToastRight')
-AddEventHandler('rsg-composite-v2:client:UIFeedPostSampleToastRight', function(text, dict, icon, text_color, duration, quality, pick)
+RegisterNetEvent('rsg-composite:client:UIFeedPostSampleToastRight')
+AddEventHandler('rsg-composite:client:UIFeedPostSampleToastRight', function(text, dict, icon, text_color, duration, quality, pick)
     local _dict = dict
     local _icon = icon
     if LoadTexture(_dict) then
-		exports["rsg-composite-v2"]:showAdvancedRightNotification(text, _dict, _icon, text_color or nil, duration or 2000, quality or 0, pick or 1)
+		exports["rsg-composite"]:showAdvancedRightNotification(text, _dict, _icon, text_color or nil, duration or 2000, quality or 0, pick or 1)
 	end
 end)
 

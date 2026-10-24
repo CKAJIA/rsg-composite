@@ -11,9 +11,9 @@ local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)
-	RSGCore.Functions.TriggerCallback('rsg-composite-v2:server:GetPlayerComposites', function(compositeData)
+	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 		Config.FullLootedScenarioPoint = compositeData
-		TriggerEvent('rsg-composite-v2:client:CompositeDataLoaded')
+		TriggerEvent('rsg-composite:client:CompositeDataLoaded')
 		playerSpawn = true	
 		startPointCheck()
 	end)	
@@ -21,7 +21,7 @@ end)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
-    TriggerEvent('rsg-composite-v2:client:CompositeDataUnloaded')
+    TriggerEvent('rsg-composite:client:CompositeDataUnloaded')
 end)
 
 function CreateScenarioPoints()
@@ -161,12 +161,12 @@ CreateThread(function()
 						--print("<----EVENT_CALCULATE_LOOT---->")
 					elseif eventAtIndex == `EVENT_LOOT` then
 						if IsPedOnMount(player) == false then
-							local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 36)
+							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
 							eventLoot.Model = view["56"]
 						end
 						--print("<----EVENT_LOOT---->")
 					elseif eventAtIndex == `EVENT_LOOT_COMPLETE` then
-						local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 3)
+						local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
 						local ped = view["0"] --прилетает наш Ped-Player
 						local lootedEntity = view["2"]
 						local lootSuccess = view["4"] == true or view["4"] == 1
@@ -195,7 +195,7 @@ CreateThread(function()
 						eventLoot.Eat = false
 						--print("<----EVENT_LOOT_COMPLETE---->")
 					--elseif eventAtIndex == `EVENT_LOOT_PLANT_START` then						
-					--	local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 72)
+					--	local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 72)
 					--	print("<----EVENT_LOOT_PLANT_START---->" .. tostring(view["0"]), tostring(view["1"]), tostring(view["2"]), tostring(view["3"]), tostring(view["4"]))
 					--	--срабатывает только когда съедает растение или поднимает- но только мелкие- кусты не срабатывают
 					end					
@@ -314,9 +314,9 @@ AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
 		if LocalPlayer.state.isLoggedIn then --это для перезапуска если в игре
 			--TriggerEvent('RSGCore:Client:OnPlayerLoaded')
-			RSGCore.Functions.TriggerCallback('rsg-composite-v2:server:GetPlayerComposites', function(compositeData)
+			RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 				Config.FullLootedScenarioPoint = compositeData
-				TriggerEvent('rsg-composite-v2:client:CompositeDataLoaded')
+				TriggerEvent('rsg-composite:client:CompositeDataLoaded')
 				playerSpawn = true	
 				startPointCheck()
 			end)

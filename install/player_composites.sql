@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `player_composites_v2` (
+CREATE TABLE IF NOT EXISTS `player_composites` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `citizenid` VARCHAR(50) NOT NULL,
   `pointkey` VARCHAR(32) NOT NULL,

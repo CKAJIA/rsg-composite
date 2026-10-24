@@ -13,11 +13,11 @@ for _, ammoType in ipairs(Config.TreeEggs.smallGameAmmoTypes or { 'ammo_arrow_sm
     smallGameAmmoTypes[joaat(ammoType)] = true
 end
 
-RegisterNetEvent('rsg-composite-v2:client:CompositeDataLoaded', function()
+RegisterNetEvent('rsg-composite:client:CompositeDataLoaded', function()
     playerReady = true
 end)
 
-RegisterNetEvent('rsg-composite-v2:client:CompositeDataUnloaded', function()
+RegisterNetEvent('rsg-composite:client:CompositeDataUnloaded', function()
     playerReady = false
     pendingTreeEggPoints = {}
     for scenarioId in pairs(activeTreeNests) do
@@ -25,13 +25,13 @@ RegisterNetEvent('rsg-composite-v2:client:CompositeDataUnloaded', function()
     end
 end)
 
-RegisterNetEvent('rsg-composite-v2:client:TreeEggGatherResult', function(success, pointKey, scenarioId, reason)
+RegisterNetEvent('rsg-composite:client:TreeEggGatherResult', function(success, pointKey, scenarioId, reason)
 	if pointKey then
 		pendingTreeEggPoints[pointKey] = nil
 	end
     if not success then
         if Config.TreeEggs.debug then
-            print(('[rsg-composite-v2][tree-eggs] server rejected egg pickup (%s): %s'):format(tostring(pointKey), tostring(reason)))
+            print(('[rsg-composite][tree-eggs] server rejected egg pickup (%s): %s'):format(tostring(pointKey), tostring(reason)))
         end
         return
     end
@@ -45,7 +45,7 @@ end)
 
 local function logTreeEgg(message)
     if Config.TreeEggs.debug then
-        print(('[rsg-composite-v2][tree-eggs] %s'):format(message))
+        print(('[rsg-composite][tree-eggs] %s'):format(message))
     end
 end
 
@@ -308,7 +308,7 @@ function HandleTreeEggLootComplete(initiator, targetEntity, targetModel, lootSuc
 
                 pendingTreeEggPoints[pointKey] = true
                 RemoveTreeNest(scenarioId)
-                TriggerServerEvent('rsg-composite-v2:server:GatherTreeEgg', pointKey, scenarioId, targetModel)
+                TriggerServerEvent('rsg-composite:server:GatherTreeEgg', pointKey, scenarioId, targetModel)
                 return true
             end
         end
