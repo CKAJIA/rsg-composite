@@ -20,7 +20,7 @@ exports('NativeCreateComposite', (compositeHash, x, y, z, heading, groundSetting
     return [compositeId, outSlot];  // outSlot = твой outValue!
 });
 //ПРИМЕР
-//local result = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
+//local result = exports["rsg-composite-v2"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, Heading, onGround, -1)
 //local compositeId = result[1]
 //local outSlot = result[2]
 */
@@ -29,10 +29,8 @@ exports('NativeGetGroundZFor3dCoord', (x, y, z) => {
     let buffer = new ArrayBuffer(4 * 8);
     let view = new DataView(buffer);
 
-    Citizen.invokeNative("0x24FA4267BB8D2431", x, y, z, view, false, Citizen.returnResultAnyway());
-    let out = new Int32Array(buffer);
-
-    return out;
+    const success = Citizen.invokeNative("0x24FA4267BB8D2431", x, y, z, view, false, Citizen.returnResultAnyway());
+    return [success, view.getFloat32(0, true)];
 });
 
 exports('NativeGetCompositeEntities', (composite) => {

@@ -5,7 +5,7 @@ local CompositeLoaded = false
 
 local function EnsureCompositesTable()
     local sql = [[
-        CREATE TABLE IF NOT EXISTS player_composites (
+        CREATE TABLE IF NOT EXISTS player_composites_v2 (
             id INT NOT NULL AUTO_INCREMENT,
             citizenid VARCHAR(50) NOT NULL,
             pointkey VARCHAR(32) NOT NULL,
@@ -34,6 +34,8 @@ function GetDictTexture(herbID)
         return "inventory_items"
     elseif herbID >= 44 and herbID <= 53 or herbID >= 57 and herbID <= 60 then
         return "inventory_items_mp"
+	elseif herbID >= 100 and herbID <= 105 then
+		return "inventory_items_mp"
     else
         return ""
     end
@@ -61,47 +63,57 @@ function GetColorTexture(herbID, pick)
 end
 
 
-RegisterNetEvent("rsg-composite:server:Gathered")
-AddEventHandler("rsg-composite:server:Gathered", function(HerbID, amount)
-        local _source = source
-		local Player = RSGCore.Functions.GetPlayer(_source)
-		local data = GetCompositeData(HerbID)
+local function GiveCompositeReward(source, Player, HerbID, amount)
+	local data = GetCompositeData(HerbID)
+	if not Player or not data or not data.item or data.item == '' then
+		TriggerClientEvent('ox_lib:notify', source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000})
+		return false
+	end
 
+	local item = data.item
+	local itemData = RSGCore.Shared.Items[item]
+	if not itemData or not Player.Functions.AddItem(item, amount) then
+		--ничего делать не надо- в самом инвентаре выдаст сообщение что ивнетарь переполнен
+		--и выкинет на землю
+		--TriggerClientEvent('ox_lib:notify', source, {title = 'Inventory full', description = item, type = 'error', duration = 3000})
+		--return false
+	end
 
-        if data and data.item and data.item ~= "" then
-			local item = data.item
-			Player.Functions.AddItem(item, amount) --amount количество
-			--TriggerClientEvent('rsg-inventory:client:ItemBox', _source, RSGCore.Shared.Items[item], "add", amount)
-			--TriggerClientEvent('ox_lib:notify', _source, {title = RSGCore.Shared.Items[item].label, description = 'добавлен(а) в инвентарь!', type = 'success', duration = 3000 })
-			local noticeString = ""
-			if amount > 1 then noticeString = amount .. "x " end
-			--TriggerClientEvent('rNotify:ShowAdvancedRightNotification', _source, RSGCore.Shared.Items[item].label, "pm_collectors_bag_mp" , "provision_wldflwr_wild_rhubarb" , "COLOR_PURE_WHITE", 4000)
-			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', _source, noticeString .. RSGCore.Shared.Items[item].label, GetDictTexture(HerbID), item, GetColorTexture(HerbID, true), 2000, 0, 1)
-			if data.rewards and #data.rewards > 0 then
-				for _, reward in pairs(data.rewards) do
-					local chance = math.random(1, 100)
-					if chance <= reward.chance then
-						local rAmount = math.random(reward.amountMin, reward.amountMax)
-						if Player.Functions.AddItem(reward.item, rAmount) then
-							TriggerClientEvent('rsg-inventory:client:ItemBox', _source, RSGCore.Shared.Items[reward.item], "add", rAmount)
-						end
-					end
+	local noticeString = amount > 1 and (amount .. 'x ') or ''
+	TriggerClientEvent('rsg-composite-v2:client:UIFeedPostSampleToastRight', source,
+		noticeString .. itemData.label, GetDictTexture(HerbID), item, GetColorTexture(HerbID, true), 2000, 0, 1)
+
+	if data.rewards and #data.rewards > 0 then
+		for _, reward in pairs(data.rewards) do
+			if math.random(1, 100) <= reward.chance then
+				local rewardAmount = math.random(reward.amountMin, reward.amountMax)
+				if Player.Functions.AddItem(reward.item, rewardAmount) and RSGCore.Shared.Items[reward.item] then
+					TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[reward.item], 'add', rewardAmount)
 				end
 			end
-			if data.lootExp then
-				for expName, exp in pairs(data.lootExp) do
-					local eAmount = math.random(exp.Min, exp.Max)
-					Config.serverUpdateExp(_source, expName, eAmount, 2000)
-				end
-			end
-		else
-			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
-        end
-    end
-)
+		end
+	end
+
+	if data.lootExp then
+		for expName, exp in pairs(data.lootExp) do
+			local expAmount = math.random(exp.Min, exp.Max)
+			Config.serverUpdateExp(source, expName, expAmount, 2000)
+		end
+	end
+	return true
+end
+
+RegisterNetEvent('rsg-composite-v2:server:Gathered', function(HerbID, amount)
+	local src = source
+	local Player = RSGCore.Functions.GetPlayer(src)
+	HerbID = tonumber(HerbID)
+	amount = tonumber(amount)
+	if not HerbID or not amount or amount < 1 or amount % 1 ~= 0 then return end
+	GiveCompositeReward(src, Player, HerbID, amount)
+end)
 --[[
-RegisterNetEvent("rsg-composite:server:AdditionRewards")
-AddEventHandler("rsg-composite:server:AdditionRewards", function(item, amount)
+RegisterNetEvent("rsg-composite-v2:server:AdditionRewards")
+AddEventHandler("rsg-composite-v2:server:AdditionRewards", function(item, amount)
         local _source = source
 		local Player = RSGCore.Functions.GetPlayer(_source)
         if item and amount then
@@ -114,13 +126,13 @@ AddEventHandler("rsg-composite:server:AdditionRewards", function(item, amount)
     end
 )
 --]]
-RegisterNetEvent("rsg-composite:server:Eating")
-AddEventHandler("rsg-composite:server:Eating", function(HerbID)
+RegisterNetEvent("rsg-composite-v2:server:Eating")
+AddEventHandler("rsg-composite-v2:server:Eating", function(HerbID)
         local _source = source
 		local data = GetCompositeData(HerbID)
         
 		if data and data.item and data.item ~= "" then
-			TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[data.item].label, GetDictTexture(HerbID) , data.item, GetColorTexture(HerbID, false), 2000, 0, 0)
+			TriggerClientEvent('rsg-composite-v2:client:UIFeedPostSampleToastRight', source, RSGCore.Shared.Items[data.item].label, GetDictTexture(HerbID) , data.item, GetColorTexture(HerbID, false), 2000, 0, 0)
 		else
 			TriggerClientEvent('ox_lib:notify', _source, {title = 'No items for', description = HerbID, type = 'error', duration = 5000 })
         end
@@ -133,31 +145,31 @@ AddEventHandler("rsg-composite:server:Eating", function(HerbID)
     end
 )
 
-RegisterNetEvent("rsg-composite:server:AddToServerPoint")
-AddEventHandler("rsg-composite:server:AddToServerPoint", function(key, CompositePoint)
+RegisterNetEvent("rsg-composite-v2:server:AddToServerPoint")
+AddEventHandler("rsg-composite-v2:server:AddToServerPoint", function(key, CompositePoint)
 		local playerId = source -- Получаем ID игрока, отправившего запрос
 		if ServerComposite[key] == nil then
 			ServerComposite[key] = CompositePoint
 			--print("HerbCoords[1] = " .. CompositePoint.HerbID)
 		end
 		--local compositeTable = ServerComposite[key]
-		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite-v2:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
     end
 )
 --[[
-RegisterServerEvent("rsg-composite:server:RequestCompositeFromClient")
-AddEventHandler("rsg-composite:server:RequestCompositeFromClient", function(key)
+RegisterServerEvent("rsg-composite-v2:server:RequestCompositeFromClient")
+AddEventHandler("rsg-composite-v2:server:RequestCompositeFromClient", function(key)
     local playerId = source -- Получаем ID игрока, отправившего запрос
 	if ServerComposite[key] then
 		local compositeTable = ServerComposite[key] -- Получаем нужную таблицу
 		--print("HerbID = " .. compositeTable.HerbID)
-		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
+		TriggerClientEvent("rsg-composite-v2:client:GetServerComposite", playerId, key, compositeTable) -- Отправляем таблицу клиенту
 	end
 end)
 ]]--
 
-RegisterServerEvent("rsg-composite:server:SendMessage")
-AddEventHandler("rsg-composite:server:SendMessage", function(ctitle, cmessage)
+RegisterServerEvent("rsg-composite-v2:server:SendMessage")
+AddEventHandler("rsg-composite-v2:server:SendMessage", function(ctitle, cmessage)
 	local _source = source
     TriggerClientEvent('ox_lib:notify', _source, {title = ctitle, description = cmessage, type = 'inform', duration = 3000 })
 end)
@@ -168,26 +180,120 @@ end)
 
 
 
-RegisterServerEvent('rsg-composite:server:SaveGatheredPoint')
-AddEventHandler('rsg-composite:server:SaveGatheredPoint', function(pointkey, scenario)
+RegisterServerEvent('rsg-composite-v2:server:SaveGatheredPoint')
+AddEventHandler('rsg-composite-v2:server:SaveGatheredPoint', function(pointkey, scenario)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     local citizenid = Player.PlayerData.citizenid	
 
-	MySQL.Async.execute('INSERT INTO player_composites (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
+	MySQL.Async.execute('INSERT INTO player_composites_v2 (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
 		['@citizenid'] = citizenid,
 		['@pointkey'] = pointkey,
 		['@scenario'] = scenario
 	})
 end)
 
+local treeEggClaimsInProgress = {}
+
+local function getTreeEggSpeciesFromModel(model)
+	local targetModel = tonumber(model)
+	if not targetModel then return nil end
+
+	for speciesKey, species in pairs(Config.TreeEggs.species or {}) do
+		local eggModel = type(species.eggModel) == 'number' and species.eggModel or GetHashKey(species.eggModel)
+		if eggModel == targetModel then
+			return species
+		end
+	end
+	return nil
+end
+
+RegisterNetEvent('rsg-composite-v2:server:GatherTreeEgg', function(pointkey, scenario, model)
+	local src = source
+	local Player = RSGCore.Functions.GetPlayer(src)
+	local species = getTreeEggSpeciesFromModel(model)
+	local keyX, keyY
+	local scenarioId = tonumber(scenario)
+	
+	print("rsg-composite-v2:server:GatherTreeEgg")
+
+	if type(pointkey) == 'string' then
+		local xText, yText = pointkey:match('^([%-]?%d+%.%d+):([%-]?%d+%.%d+)$')
+		keyX, keyY = tonumber(xText), tonumber(yText)
+	end
+
+	local function respond(success, reason)
+		TriggerClientEvent('rsg-composite-v2:client:TreeEggGatherResult', src, success, pointkey, tonumber(scenario), reason)
+	end
+
+	local compositeData = species and species.herbID and GetCompositeData(species.herbID)
+	if not Player or not compositeData or not compositeData.item or compositeData.item == ''
+		or not keyX or not keyY or not scenarioId then
+		respond(false, 'invalid_request')
+		return
+	end
+
+	local playerPed = GetPlayerPed(src)
+	if not playerPed or playerPed == 0 then
+		respond(false, 'player_not_found')
+		return
+	end
+	local playerCoords = GetEntityCoords(playerPed)
+	if #(vector2(playerCoords.x, playerCoords.y) - vector2(keyX, keyY)) > 20.0 then
+		respond(false, 'too_far_from_nest')
+		return
+	end
+
+	local claimKey = ('%s:%s'):format(Player.PlayerData.citizenid, pointkey)
+	if treeEggClaimsInProgress[claimKey] then
+		respond(false, 'claim_in_progress')
+		return
+	end
+	treeEggClaimsInProgress[claimKey] = true
+
+	local ok, result = pcall(function()
+		-- The unique citizen/point key makes a pickup persistent and prevents duplicate rewards.
+		return MySQL.insert.await(
+			'INSERT IGNORE INTO player_composites_v2 (citizenid, pointkey, scenario) VALUES (?, ?, ?)',
+			{ Player.PlayerData.citizenid, pointkey, scenarioId }
+		)
+	end)
+	if not ok then
+		treeEggClaimsInProgress[claimKey] = nil
+		print(('[rsg-composite-v2] Tree egg DB save failed: %s'):format(tostring(result)))
+		respond(false, 'database_error')
+		return
+	end
+
+	if not result or tonumber(result) == 0 then
+		treeEggClaimsInProgress[claimKey] = nil
+		-- Already collected for this character; synchronize this client without paying again.
+		respond(true, 'already_gathered')
+		return
+	end
+
+	GiveCompositeReward(src, Player, species.herbID, compositeData.pickupAmount or 1)
+	--Это не нужно-потому что если переполнен инвентарь у нас выпадет на землю.
+	--и получится что снова заспанится точка- так можно спавнить постоянно
+	--if not GiveCompositeReward(src, Player, species.herbID, compositeData.pickupAmount or 1) then
+	--	MySQL.query.await(
+	--		'DELETE FROM player_composites_v2 WHERE citizenid = ? AND pointkey = ?',
+	--		{ Player.PlayerData.citizenid, pointkey }
+	--	)
+	--	treeEggClaimsInProgress[claimKey] = nil
+	--	respond(false, 'inventory_full')
+	--	return
+	--end
+	treeEggClaimsInProgress[claimKey] = nil
+	respond(true, 'gathered')
+end)
+
 -- get plant
-RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
+RSGCore.Functions.CreateCallback('rsg-composite-v2:server:GetPlayerComposites', function(source, cb)
 	local playerId = source
 	local Player = RSGCore.Functions.GetPlayer(playerId)
 	local citizenid = Player.PlayerData.citizenid
-	--local result = MySQL.query.await('SELECT * FROM player_composites WHERE citizenid = @citizenid', {['@citizenid'] = citizenid})
-	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites WHERE citizenid = @citizenid', { 
+	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites_v2 WHERE citizenid = @citizenid', { 
 		['@citizenid'] = citizenid 
 	})
 
@@ -216,7 +322,7 @@ AddEventHandler(
     "RSGCore:Client:OnPlayerLoaded",
     function(source, user_id, isFirstSpawn)
         if isFirstSpawn then
-            TriggerClientEvent("rsg-composite:SetPopSuppressed", source, popSuppressed)
+            TriggerClientEvent("rsg-composite-v2:SetPopSuppressed", source, popSuppressed)
         end
     end
 )
@@ -229,7 +335,7 @@ CreateUseableItem = function()
 			RSGCore.Functions.CreateUseableItem(v.item, function(source, item)
 				local Player = RSGCore.Functions.GetPlayer(source)
 				if Player.Functions.RemoveItem(v.item, 1, item.slot) then
-					TriggerClientEvent("rsg-composite:client:Eating", source, k, v.item) -- передача ключа k - HerbID
+					TriggerClientEvent("rsg-composite-v2:client:Eating", source, k, v.item) -- передача ключа k - HerbID
 				end
 			end)
 		end
@@ -244,7 +350,7 @@ CreateUseableItem()
 
 -- Функция для очистки таблицы
 local function clearTableComposite()
-    MySQL.Async.execute('TRUNCATE TABLE player_composites')
+    MySQL.Async.execute('TRUNCATE TABLE player_composites_v2')
 end
 
 -- Планирование очистки таблицы в 6:00 утра каждый день

@@ -2,6 +2,8 @@ Config = Config or {}
 Config.FullLootedScenarioPoint = {}
 Config.Debug = false
 
+Config.EagleEyeTint = { r = 255.0, g = 255.0, b = 0.0 }
+
 Config.AutoEquipKnife = false
 Config.UseArthurVomitAnimSceneForMen = true
 
@@ -83,6 +85,8 @@ Config.composite_scenario = {
 	--  -- ???????	["LOOTABLE_COMPOSITE_ENTITY_DEF"] -- 0x875F0853
 }
 
+-- Уникальные растения и обычные яйца регистрируются для Eagle Eye.
+-- Для отдельного вида можно задать свой spawn.eagleEyeTint = {r=255.0, g=255.0, b=0.0}.
 Config.Composites = {
     [1] = { --Орхидея "Звезда Акуньи"+
         item = "provision_ro_flower_acunas_star",
@@ -577,6 +581,54 @@ Config.Composites = {
 		herbNameHash = `COMPOSITE_LOOTABLE_SALTBUSH_DEF`,
         spawn = { minCol = 2, maxCol = 3 },
 		eat = { isPoison = true },
+    },
+    -- Яйца из древесных гнёзд. Здесь настраиваются предметы, дополнительные
+    -- награды, опыт и использование так же, как для остальных композитов.
+    [100] = {
+        item = "provision_eagle_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+    },
+    [101] = {
+        item = "provision_condor_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+    },
+    [102] = {
+        item = "provision_egret_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+    },
+    [103] = {
+        item = "provision_hawk_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+    },
+    [104] = {
+        item = "provision_heron_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+    },
+    [105] = {
+        item = "provision_spoonbill_egg",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+		lootExp = {
+			["herbalist"] = {Min = 2, Max = 3},
+			["crafting"] = {Min = 1, Max = 1},
+		},
     },
 }
 

@@ -11,8 +11,9 @@ local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)
-	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
+	RSGCore.Functions.TriggerCallback('rsg-composite-v2:server:GetPlayerComposites', function(compositeData)
 		Config.FullLootedScenarioPoint = compositeData
+		TriggerEvent('rsg-composite-v2:client:CompositeDataLoaded')
 		playerSpawn = true	
 		startPointCheck()
 	end)	
@@ -20,6 +21,7 @@ end)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
+    TriggerEvent('rsg-composite-v2:client:CompositeDataUnloaded')
 end)
 
 function CreateScenarioPoints()
@@ -48,22 +50,41 @@ end
 function getLootScenarioHash(playerPosition, spawnRadius, foundNums)
     local scenarios = {}
 	--local DataStruct = DataView.ArrayBuffer(buffSize)
-	local is_data_exists = GetScenarioPointsInArea(playerPosition, spawnRadius, scenarioBuf:Buffer(), foundNums)
+	-- GetScenarioPointsInArea expects separate X/Y/Z values. Each returned point
+	-- occupies an 8-byte buffer slot; Lua's first loop index is 1.
+	local is_data_exists = GetScenarioPointsInArea(
+		playerPosition.x, playerPosition.y, playerPosition.z,
+		spawnRadius, scenarioBuf:Buffer(), foundNums
+	)
 	
-	if is_data_exists then
-		for i = 1, is_data_exists, 1 do
-			local scenario = scenarioBuf:GetInt32(8 * i)			
-			local hash = GetScenarioPointType(scenario)
-			local herbsScenarioPoint = Config.composite_scenario[hash] or nil
+	if is_data_exists and is_data_exists > 0 then
+		local scenarioCount = math.min(is_data_exists, foundNums, math.floor(SCENARIO_BUF_SIZE / 8) - 1)
+		for i = 1, scenarioCount, 1 do
+			local scenario = scenarioBuf:GetInt32(8 * i)
 			if DoesScenarioPointExist(scenario) then
-				if herbsScenarioPoint and herbsScenarioPoint ~= nil  and IsScenarioPointActive(scenario) then					
+				local hash = GetScenarioPointType(scenario)
+				local herbsScenarioPoint = Config.composite_scenario[hash]
+				if herbsScenarioPoint and IsScenarioPointActive(scenario) then
 					table.insert(scenarios, {scenario = scenario, herbsScenarioPoint = herbsScenarioPoint})
-					--print("scenario = " .. scenario .. ", hash = " .. hash .. ", herbsScenarioPoint = " .. tostring(herbsScenarioPoint))
 				end
 			end
 		end
-		return scenarios
 	end
+	return scenarios
+end
+
+function ResolveEggScenario(scenarioData)
+    local herbID = scenarioData.herbsScenarioPoint.HerbID
+    local compositeHash = scenarioData.herbsScenarioPoint.herbHesh
+
+    -- The world has one alligator-egg scenario hash. Choose the clutch size per spawn.
+    if compositeHash == "COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF" then
+        local clutchSize = math.random(3, 5)
+        herbID = 54 + clutchSize - 3
+        compositeHash = ("COMPOSITE_LOOTABLE_GATOR_EGG_%d_DEF"):format(clutchSize)
+    end
+
+    return herbID, compositeHash
 end
 
 function startPointCheck()	
@@ -81,19 +102,18 @@ function startPointCheck()
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
-	
+				-- Запускаем дистанционную очистку даже если рядом больше нет активных точек.
+				checkRecordAndClear(playerPosition)																																 
 				local scenarios = getLootScenarioHash(playerPosition, SPAWN_RADIUS, 600)
 				for _, scenarioData in ipairs(scenarios) do
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
 					local pointHeading = GetScenarioPointHeading(scenarioData.scenario, true)
-					local herbHash = scenarioData.herbsScenarioPoint.herbHesh
-					local herbID = scenarioData.herbsScenarioPoint.HerbID
-					if herbHash == "COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF" then
-						local gattorEggNum = 0
-						gattorEggNum = math.random(0, 2)
-						herbID = herbID + gattorEggNum
-						local eggIndex = 3 + gattorEggNum
-						herbHash = "COMPOSITE_LOOTABLE_GATOR_EGG_" .. eggIndex .. "_DEF"
+					local herbID, herbHash
+					if isEggs(scenarioData.herbsScenarioPoint.HerbID) then
+						herbID, herbHash = ResolveEggScenario(scenarioData)
+					else
+						herbID = scenarioData.herbsScenarioPoint.HerbID
+						herbHash = scenarioData.herbsScenarioPoint.herbHesh
 					end
 					CreateServerComposite(herbID, herbHash, pointCoords, pointHeading)
 				end
@@ -141,15 +161,18 @@ CreateThread(function()
 						--print("<----EVENT_CALCULATE_LOOT---->")
 					elseif eventAtIndex == `EVENT_LOOT` then
 						if IsPedOnMount(player) == false then
-							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 36)
+							local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 36)
 							eventLoot.Model = view["56"]
 						end
 						--print("<----EVENT_LOOT---->")
 					elseif eventAtIndex == `EVENT_LOOT_COMPLETE` then
-						local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 3)
+						local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 3)
 						local ped = view["0"] --прилетает наш Ped-Player
+						local lootedEntity = view["2"]
+						local lootSuccess = view["4"] == true or view["4"] == 1
+						local targetModel = lootedEntity and lootedEntity ~= 0 and GetEntityModel(lootedEntity) or 0
 						if eventLoot.Model == nil or eventLoot.Model == 0 then
-							eventLoot.Model = GetEntityModel(view["2"])
+							eventLoot.Model = GetEntityModel(lootedEntity)
 							--print("EVENT_LOOT_COMPLETE MODEL = " .. tostring(eventLoot.Model))
 						end
 						--для яиц и для сбора на лошади
@@ -158,6 +181,9 @@ CreateThread(function()
 						end
 			
 						if ped == player then
+							if HandleTreeEggLootComplete then
+								HandleTreeEggLootComplete(ped, lootedEntity, targetModel, lootSuccess)
+							end
 							if eventLoot.PlCoords and eventLoot.Model then
 								if IsValidHerbModel(eventLoot.Model) then
 									FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, not eventLoot.Eat)
@@ -169,7 +195,7 @@ CreateThread(function()
 						eventLoot.Eat = false
 						--print("<----EVENT_LOOT_COMPLETE---->")
 					--elseif eventAtIndex == `EVENT_LOOT_PLANT_START` then						
-					--	local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 72)
+					--	local view = exports["rsg-composite-v2"]:DataViewNativeGetEventDataT(0, i, 72)
 					--	print("<----EVENT_LOOT_PLANT_START---->" .. tostring(view["0"]), tostring(view["1"]), tostring(view["2"]), tostring(view["3"]), tostring(view["4"]))
 					--	--срабатывает только когда съедает растение или поднимает- но только мелкие- кусты не срабатывают
 					end					
@@ -288,8 +314,9 @@ AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
 		if LocalPlayer.state.isLoggedIn then --это для перезапуска если в игре
 			--TriggerEvent('RSGCore:Client:OnPlayerLoaded')
-			RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
+			RSGCore.Functions.TriggerCallback('rsg-composite-v2:server:GetPlayerComposites', function(compositeData)
 				Config.FullLootedScenarioPoint = compositeData
+				TriggerEvent('rsg-composite-v2:client:CompositeDataLoaded')
 				playerSpawn = true	
 				startPointCheck()
 			end)
