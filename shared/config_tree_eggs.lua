@@ -7,7 +7,6 @@ Config.TreeEggs = {
     despawnDistance = 175.0,
     maxActiveNests = 40,
     maxScenarioPoints = 600,
-    debug = true,
 
     -- Оригинал проверяет текущий ammo type, а не название оружия.
     --smallGameAmmoType = "ammo_arrow_small_game",

@@ -74,3 +74,8 @@
     provision_hawk_egg                        = { name = 'provision_hawk_egg',                   label = 'Hawk Egg',                 weight = 0.05, type = 'item', image = 'provision_hawk_egg.png',                 unique = false, useable = true, shouldClose = true, description = 'Hawk Egg',                 },
     provision_heron_egg                       = { name = 'provision_heron_egg',                  label = 'Heron Egg',                weight = 0.05, type = 'item', image = 'provision_heron_egg.png',                 unique = false, useable = true, shouldClose = true, description = 'Heron Egg',                },
     provision_spoonbill_egg                   = { name = 'provision_spoonbill_egg',              label = 'Spoonbill Egg',            weight = 0.05, type = 'item', image = 'provision_spoonbill_egg.png',                 unique = false, useable = true, shouldClose = true, description = 'Spoonbill Egg',            },
+
+	-----------------------------------------------
+    -- CRAYFISH
+    -----------------------------------------------
+	upgrade_fsh_bait_crayfish             = { name = 'upgrade_fsh_bait_crayfish',             label = 'Crayfish',                           weight = 10, type = 'item', image = 'upgrade_fsh_bait_crayfish.png',             unique = false, useable = true, shouldClose = true, description = 'Рак которого можно сварить или сделать из него наживку для ловли рыбы.' },

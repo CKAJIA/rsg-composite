@@ -1,6 +1,7 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
-local playerSpawn = false
+playerSpawn = false
+--local playerSpawn = false
 local SPAWN_RADIUS = 100.0--100.0
 local prePlayerPosition = nil
 local eventLoot = {PlCoords = nil, Model = nil, Eat = false}
@@ -198,7 +199,81 @@ CreateThread(function()
 					--	local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 72)
 					--	print("<----EVENT_LOOT_PLANT_START---->" .. tostring(view["0"]), tostring(view["1"]), tostring(view["2"]), tostring(view["3"]), tostring(view["4"]))
 					--	--срабатывает только когда съедает растение или поднимает- но только мелкие- кусты не срабатывают
-					end					
+					--end
+					----------------------------------------------------------------------------
+					------------------------------------РАКИ------------------------------------
+					----------------------------------------------------------------------------
+					elseif Config.EnableCrayFish then
+						if eventAtIndex == joaat("EVENT_ITEM_PROMPT_INFO_REQUEST") then
+							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 2)
+							local entity = view["0"]
+							local inventoryItem = view["2"]
+							
+							if inventoryItem == `UPGRADE_FSH_BAIT_CRAYFISH` then
+							
+								local struct = DataView.ArrayBuffer(8*12)
+								struct:SetInt32(8*0, entity)
+								struct:SetInt32(8*1, inventoryItem)
+								struct:SetInt32(8*2, inventoryItem)
+								struct:SetInt64(8*3, 0) --сюда наверное можно поставить название предмета свое
+								struct:SetInt32(8*4, 0) --тут должна быть цена предмета ItemdatabaseGetCostItem(inventoryItem, -915411861, 0)
+								struct:SetInt32(8*5, 0) --тут тоже цена прилетает, но с множителем на количесвто
+								struct:SetInt32(8*6, 3) -- 0 -проверить 3 - только взять 3 | 4 - только взять затемнена кнопка 3 | 8 -проверить 3 | 16 -осмотреть и взять активны
+								struct:SetInt32(8*7, 1)
+								struct:SetInt32(8*8, 0)
+								struct:SetInt32(8*9, 0)
+								struct:SetInt32(8*10, 0)
+								struct:SetInt32(8*11, 0)
+							
+								Citizen.InvokeNative(0xFD41D1D4350F6413, struct:Buffer())
+							end
+						elseif eventAtIndex == joaat("EVENT_INVENTORY_ITEM_PICKED_UP") then
+							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 5)
+							local inventoryItem = view["0"] --UPGRADE_FSH_BAIT_CRAYFISH(149706141)
+							local model = view["2"] --p_crayfish01x(-445365508)
+							local targetEntity = view["8"] --target_entity
+							
+							if inventoryItem == `UPGRADE_FSH_BAIT_CRAYFISH` and model == `p_crayfish01x` then
+								PrintDebug("[crayfish] inventoryItem = " .. tostring(inventoryItem), "model = " .. tostring(model), "eventData2 = " .. tostring(eventData2))
+								
+								local holeIndex = FindHoleByCrayfishEntity(targetEntity)
+								
+								if holeIndex then
+									local state = GetHoleState(holeIndex)
+						
+									if not state.exhausted and not state.pending then
+										state.pending = true
+									
+										state.collected = state.collected + 1
+										state.exhausted = state.collected >= state.limit
+										
+										DeleteCrayfishAtHole(holeIndex)
+										DeleteCrayfishScenario(holeIndex)
+									
+										PrintDebug(('[crayfish] Нора %d: добыто %d/%d, exhausted=%s'):format(holeIndex, state.collected, state.limit, tostring(state.exhausted)))
+
+										-- Здесь выдача награды и т.д.
+										TriggerServerEvent('rsg-composite:server:Gathered', 200, 1)
+										
+										--если точка полностью собрана - отсылаем в БД
+										if state.exhausted then
+											Config.FullLootedScenarioPoint[state.key] = 0									
+											TriggerServerEvent('rsg-composite:server:SaveGatheredPoint', state.key,	0)
+										end
+									
+										state.pending = false
+									end
+								else
+									print(('[crayfish] Подбор не сопоставлен с нашей норой: entity=%s'):format(
+										tostring(targetEntity)
+									))
+								end
+							end
+						end
+					end
+					----------------------------------------------------------------------------
+					------------------------------------РАКИ------------------------------------
+					----------------------------------------------------------------------------
 				end
 			end
 			Wait(1)
@@ -294,7 +369,6 @@ end
 function GetScenarioPointRadius(id)
     return Citizen.InvokeNative(0x6718F40313A2B5A6, id, Citizen.ResultAsFloat())
 end
-
 
 --При перезагрузке очищает все что вносили в таблицу
 AddEventHandler('onResourceStop', function(resourceName)

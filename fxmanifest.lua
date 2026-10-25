@@ -8,9 +8,10 @@ version '2.0.0'
 
 shared_scripts {
 	'@ox_lib/init.lua',
-    "exports.js",
-    'config.lua',
-    'config_tree_eggs.lua',
+    "shared/exports.js",
+    'shared/config.lua',
+    'shared/config_tree_eggs.lua',
+	'shared/config_crayfish.lua',
 }
 
 client_scripts {
@@ -18,7 +19,8 @@ client_scripts {
 	'client/client.lua',
 	'client/utilites.lua',
 	'client/tree_eggs.lua',
-	'client/deletedherbs.lua'
+	'client/crayfish.lua',
+	'client/deletedherbs.lua',
 }
 
 server_scripts {

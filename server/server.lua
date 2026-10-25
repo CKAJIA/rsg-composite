@@ -34,9 +34,11 @@ function GetDictTexture(herbID)
         return "inventory_items"
     elseif herbID >= 44 and herbID <= 53 or herbID >= 57 and herbID <= 60 then
         return "inventory_items_mp"
-	elseif herbID >= 100 and herbID <= 105 then
+	elseif herbID >= 100 and herbID <= 105 then --яйца на деревьях
 		return "inventory_items_mp"
-    else
+    elseif herbID == 200 then --раки
+		return "inventory_items"
+	else
         return ""
     end
 end
@@ -72,7 +74,11 @@ local function GiveCompositeReward(source, Player, HerbID, amount)
 
 	local item = data.item
 	local itemData = RSGCore.Shared.Items[item]
-	if not itemData or not Player.Functions.AddItem(item, amount) then
+	if not itemData then
+		print(('[rsg-composite] Предмет отсутствует в Shared.Items: %s'):format(tostring(item)))
+		return false
+	end
+	if not Player.Functions.AddItem(item, amount) then
 		--ничего делать не надо- в самом инвентаре выдаст сообщение что ивнетарь переполнен
 		--и выкинет на землю
 		--TriggerClientEvent('ox_lib:notify', source, {title = 'Inventory full', description = item, type = 'error', duration = 3000})
@@ -215,7 +221,7 @@ RegisterNetEvent('rsg-composite:server:GatherTreeEgg', function(pointkey, scenar
 	local keyX, keyY
 	local scenarioId = tonumber(scenario)
 	
-	print("rsg-composite:server:GatherTreeEgg")
+	PrintDebug("rsg-composite:server:GatherTreeEgg")
 
 	if type(pointkey) == 'string' then
 		local xText, yText = pointkey:match('^([%-]?%d+%.%d+):([%-]?%d+%.%d+)$')
@@ -260,7 +266,7 @@ RegisterNetEvent('rsg-composite:server:GatherTreeEgg', function(pointkey, scenar
 	end)
 	if not ok then
 		treeEggClaimsInProgress[claimKey] = nil
-		print(('[rsg-composite] Tree egg DB save failed: %s'):format(tostring(result)))
+		PrintDebug(('[tree-eggs] Tree egg DB save failed: %s'):format(tostring(result)))
 		respond(false, 'database_error')
 		return
 	end
@@ -308,9 +314,9 @@ RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', fun
 			end
 		end
 	end
-	if Config.Debug then
-		print("Composite Data for " .. citizenid .. " uploaded successfully")
-	end
+
+	PrintDebug("Composite Data for " .. citizenid .. " uploaded successfully")
+
     cb(FullLootedScenarioPoint)
 end)
 

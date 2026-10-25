@@ -123,14 +123,14 @@ function checkRecordAndClear(playerPosition)
 				compositePointCol = compositePointCol - 1
 				if compositePointCol < 0 then compositePointCol = 0	end
 				if Config.Debug then
-					print("No more composite in point. Delete record in Composite")
+					PrintDebug("No more composite in point. Delete record in Composite")
 				end
 			else				
 				Composite[key].CompositeId = {}
 				Composite[key].VegModifierHandle = {}
 				Composite[key].PointSpawn = false
 				if Config.Debug then
-					print("Despawn point = " .. key)
+					PrintDebug("Despawn point = " .. key)
 					--print("Spawn composite num = " .. tostring(spawnCompositeNum))
 				end
 			end
@@ -144,7 +144,7 @@ function checkRecordAndClear(playerPosition)
 		for key, value in pairs(Composite) do
 			local dist = #(playerPos - key)
 			if dist >= EMERGENCY_DESPAWN_DISTANCE then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-				print("Emergency Despawn point = " .. tostring(key))
+				PrintDebug("Emergency Despawn point = " .. tostring(key))
 				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
 				Composite[key].CompositeId = {}
 				Composite[key].VegModifierHandle = {}
@@ -252,13 +252,11 @@ function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, pac
     for index = 1, #packedSlots do
         if packedSlots[index] ~= nil then
             if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then
-                if Config.Debug then
-                    print(("Composite cap reached (%d/%d); skipped remaining slots for HerbID %s"):format(spawnCompositeNum, MAX_SPAWN_COMPOSITE, HerbID))
-                end
+                PrintDebug(("Composite cap reached (%d/%d); skipped remaining slots for HerbID %s"):format(spawnCompositeNum, MAX_SPAWN_COMPOSITE, HerbID))
                 break
             end
             if not RequestAndWaitForComposite(compositeHash) then
-                if Config.Debug then print(("Composite asset did not load: %s"):format(tostring(compositeHash))) end
+                PrintDebug(("Composite asset did not load: %s"):format(tostring(compositeHash)))
                 break
             end
             local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
@@ -504,20 +502,19 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
 			
 			compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, compositeHeading, onGround, -1)
 			
-			if Config.Debug then
-				print(("Spawn try | compositeId=%s | spawnCompositeNum=%s | herbCoords=vec3(%.2f, %.2f, %.2f) | slot=%s"):format(
+			PrintDebug(("Spawn try | compositeId=%s | spawnCompositeNum=%s | herbCoords=vec3(%.2f, %.2f, %.2f) | slot=%s"):format(
 					tostring(compositeId),
 					tostring(spawnCompositeNum),
 					herbCoords[index].x, herbCoords[index].y, herbCoords[index].z,
 					tostring(index)
 				))
-			end
 
 			--если глючный composite - то удаляем его сразу(обычно начинает если уже больше 180 заспавнено.)
 			if not compositeId or compositeId <= 0 then
-				print(("ERROR: composite create failed | id=%s | herbID=%s | hash=%s | active=%s/%s"):format(
+				print(("ERROR: composite create failed | id=%s | herbID=%s | hash=%s | active=%s/%s | herbCoords=vec3(%.2f, %.2f, %.2f)"):format(
 					tostring(compositeId), tostring(HerbID), tostring(compositeHash),
-					tostring(spawnCompositeNum), tostring(MAX_SPAWN_COMPOSITE)
+					tostring(spawnCompositeNum), tostring(MAX_SPAWN_COMPOSITE), 
+					herbCoords[index].x, herbCoords[index].y, herbCoords[index].z
 				))
 				return -1, 0
 			else
@@ -570,12 +567,9 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 			end
 			compositeId[i] = 0
 			
-			if Config.Debug then
-				print(("Delete composite | spawnCompositeNum=%s | point=%s"):format(
+			PrintDebug(("Delete composite | spawnCompositeNum=%s | point=%s"):format(
 					tostring(spawnCompositeNum),
-					tostring(coordsXY)
-				))
-			end
+					tostring(coordsXY)))
 		end
 	end
 	
@@ -814,7 +808,7 @@ function SPHerbs(HerbID, herbCoords, pointCoords)
 				Composite[pointCoords.xy].GroupPromt = groupPromt
 				Composite[pointCoords.xy].PickupPrompt = pickupPrompt
 			else
-				print("ERROR: attachEntity not exist.")
+				PrintDebug("ERROR: attachEntity not exist.")
 			end
 		end
 	end
@@ -894,12 +888,12 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     end
 
     if not nearestScenario then
-        if Config.Debug then print("FindPicupCompositeAndCoords: nearestScenario not found") end
+        PrintDebug("FindPicupCompositeAndCoords: nearestScenario not found")
         return
     end
 
     if not slotIndex then
-        if Config.Debug then print("ERROR: No slotIndex for nearestScenario point") end
+        PrintDebug("ERROR: No slotIndex for nearestScenario point")
         return
     end	
 
@@ -907,7 +901,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     local key = pointCoords.xy
     local comp = Composite[key]
     if not comp then
-        if Config.Debug then  print("ERROR: Composite record missing for point") end
+        PrintDebug("ERROR: Composite record missing for point")
         return
     end
 	
@@ -927,9 +921,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     if isPickup then
 		--мы собрали
         TriggerServerEvent("rsg-composite:server:Gathered", HerbID, amount)
-		if Config.Debug then
-			print("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. amount)
-		end
+		PrintDebug("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. amount)
     else
 		--мы съели
         Eating(HerbID)
@@ -961,9 +953,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
 
         Config.FullLootedScenarioPoint[KeyFromCoords(key)] = nearestScenario
         TriggerServerEvent("rsg-composite:server:SaveGatheredPoint", KeyFromCoords(key), nearestScenario)
-		if Config.Debug then
-			print("No more composite in point. Add record to Config.FullLootedScenarioPoint")
-		end
+		PrintDebug("No more composite in point. Add record to Config.FullLootedScenarioPoint")
     end
 end
 
@@ -1496,7 +1486,11 @@ function ResetComposites()
 		Composite[key] = nil
 	end
 	for key, scenario in pairs(Config.FullLootedScenarioPoint) do
-		SetScenarioPointActive(scenario, true)
+		local scenarioId = tonumber(scenario)
+		if scenarioId and scenarioId ~= 0 and DoesScenarioPointExist(scenarioId) then
+			SetScenarioPointActive(scenarioId, true)
+		end
+
 		Config.FullLootedScenarioPoint[key] = nil
 	end
 	ClearPedTasksImmediately(PlayerPedId(), true, true)

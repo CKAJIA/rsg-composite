@@ -9,10 +9,21 @@ Config.UseArthurVomitAnimSceneForMen = true
 
 Config.PromtName = 'Взять'
 
+Config.EnableTreeEggs = true --включить яйца на деревьях
+
+Config.EnableCrayFish = true --включить раков в норах
+
 --Что использовать для начисления опыта
 --Можно вставить свой экспорт из другого скрипта
 Config.serverUpdateExp = function(source, expName, amount, duration)
     return exports['rsg-statistics']:updatexp(source, expName, amount, duration)
+end
+
+--Функция для показа дебага
+function PrintDebug(...)
+    if Config.Debug then
+        print('[rsg-composite]', ...)
+    end
 end
 
 Config.composite_scenario = {
@@ -623,6 +634,18 @@ Config.Composites = {
         item = "provision_spoonbill_egg",
         herbNameHash = 0,
         spawn = { minCol = 1, maxCol = 1, isUnique = true },
+        pickupAmount = 1,
+        eat = { isPoison = false },
+		lootExp = {
+			["herbalist"] = {Min = 2, Max = 3},
+			["crafting"] = {Min = 1, Max = 1},
+		},
+    },
+	
+	[200] = {
+        item = "upgrade_fsh_bait_crayfish",
+        herbNameHash = 0,
+        spawn = { minCol = 1, maxCol = 3, isUnique = false },
         pickupAmount = 1,
         eat = { isPoison = false },
 		lootExp = {

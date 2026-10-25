@@ -6,33 +6,18 @@ local pendingTreeEggPoints = {}
 local maxScenarioPoints = math.max(1, Config.TreeEggs.maxScenarioPoints or 600)
 -- Reserve slot 0 because the requested one-based iteration reads offsets 8, 16, ...
 local scenarioBuffer = DataView.ArrayBuffer((maxScenarioPoints + 1) * 8)
-local playerReady = false
 local smallGameAmmoTypes = {}
 
 for _, ammoType in ipairs(Config.TreeEggs.smallGameAmmoTypes or { 'ammo_arrow_small_game' }) do
     smallGameAmmoTypes[joaat(ammoType)] = true
 end
 
-RegisterNetEvent('rsg-composite:client:CompositeDataLoaded', function()
-    playerReady = true
-end)
-
-RegisterNetEvent('rsg-composite:client:CompositeDataUnloaded', function()
-    playerReady = false
-    pendingTreeEggPoints = {}
-    for scenarioId in pairs(activeTreeNests) do
-        RemoveTreeNest(scenarioId)
-    end
-end)
-
 RegisterNetEvent('rsg-composite:client:TreeEggGatherResult', function(success, pointKey, scenarioId, reason)
 	if pointKey then
 		pendingTreeEggPoints[pointKey] = nil
 	end
     if not success then
-        if Config.TreeEggs.debug then
-            print(('[rsg-composite][tree-eggs] server rejected egg pickup (%s): %s'):format(tostring(pointKey), tostring(reason)))
-        end
+        PrintDebug(('[tree-eggs] server rejected egg pickup (%s): %s'):format(tostring(pointKey), tostring(reason)))
         return
     end
 	if not pointKey then return end
@@ -44,9 +29,7 @@ RegisterNetEvent('rsg-composite:client:TreeEggGatherResult', function(success, p
 end)
 
 local function logTreeEgg(message)
-    if Config.TreeEggs.debug then
-        print(('[rsg-composite][tree-eggs] %s'):format(message))
-    end
+    PrintDebug(('[tree-eggs] %s'):format(message))
 end
 
 local function loadModel(model)
@@ -193,9 +176,7 @@ local function createTreeNest(scenarioId, speciesKey, scenarioCoords)
         coords = scenarioCoords,
         eggs = eggs,
     }
-    logTreeEgg(('spawned %s nest at %.2f %.2f %.2f'):format(
-        speciesKey, scenarioCoords.x, scenarioCoords.y, scenarioCoords.z
-    ))
+    PrintDebug(('[tree-eggs] spawned %s nest at %.2f %.2f %.2f'):format(speciesKey, scenarioCoords.x, scenarioCoords.y, scenarioCoords.z))
     return true
 end
 
@@ -233,7 +214,7 @@ local function handleNestHit(nestData, eggData, ped)
             Citizen.InvokeNative(0x78B4567E18B54480, eggData.entity)
             eggData.fallen = true
         end
-        logTreeEgg(('small-game hit: egg fell (%s)'):format(nestData.speciesKey))
+        PrintDebug(('[tree-eggs] small-game hit: egg fell (%s)'):format(nestData.speciesKey))
         return
     end
 
@@ -245,7 +226,7 @@ local function handleNestHit(nestData, eggData, ped)
         DeleteObject(eggData.entity)
     end
     eggData.entity = nil
-    logTreeEgg(('non-small-game hit: egg broken (%s)'):format(nestData.speciesKey))
+    PrintDebug(('[tree-eggs] non-small-game hit: egg broken (%s)'):format(nestData.speciesKey))
 end
 
 local function checkHits()
@@ -372,19 +353,23 @@ end
 
 CreateThread(function()
     while true do
-        if not Config.TreeEggs.enabled or not playerReady then
-            Wait(1000)
-        else
-            scanTreeNests()
-            Wait(Config.TreeEggs.scanIntervalMs or 2000)
-        end
+		local enabled = playerSpawn and Config.EnableTreeEggs
+        
+		if not enabled then
+			Wait(10000)
+		else
+			scanTreeNests()
+			Wait(Config.TreeEggs.scanIntervalMs or 2000)
+		end
     end
 end)
 
 CreateThread(function()
     while true do
-        if not Config.TreeEggs.enabled or not playerReady then
-            Wait(500)
+		local enabled = playerSpawn and Config.EnableTreeEggs
+		
+        if not enabled then
+            Wait(10000)
         else
             checkHits()
             Wait(0)
@@ -392,18 +377,18 @@ CreateThread(function()
     end
 end)
 
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then
-        return
-    end
+RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
+    pendingTreeEggPoints = {}
     for scenarioId in pairs(activeTreeNests) do
         RemoveTreeNest(scenarioId)
     end
 end)
 
-AddEventHandler('onResourceStart', function(resourceName)
-	if GetCurrentResourceName() ~= resourceName then return end
-	if LocalPlayer.state.isLoggedIn then 
-		playerReady = true
-	end
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+
+    for scenarioId in pairs(activeTreeNests) do
+        RemoveTreeNest(scenarioId)
+    end
 end)
+
