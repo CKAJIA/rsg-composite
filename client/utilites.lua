@@ -112,30 +112,28 @@ function checkRecordAndClear(playerPosition)
 	end
 	
 	-- Режим 2: Normal - деспаун дальних
-	for key, value in pairs(Composite) do
-		local dist = #(playerPos - key)--150.0
-		if dist > NEARBY_DISTANCE and value.PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
-			deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
-			--проверяем если еще есть composite на точке не собранные- то просто обнуляем
-			--а если все собрали то удаляем запись
-			if not HerbsRemains(key) then --Это наверное не надо потомучто мы при сборе итак проверяем. Если только как доп проверку.
-				Composite[key] = nil--убираем запись.
-				compositePointCol = compositePointCol - 1
-				if compositePointCol < 0 then compositePointCol = 0	end
-				if Config.Debug then
+	if spawnCompositeNum > 0 then
+		for key, value in pairs(Composite) do
+			local dist = #(playerPos - key)--150.0
+			if dist > NEARBY_DISTANCE and value.PointSpawn then --должна быть больше чем радиус спавна и и меньше чем радиус для удаления из таблицы
+				deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
+				--проверяем если еще есть composite на точке не собранные- то просто обнуляем
+				--а если все собрали то удаляем запись
+				if not HerbsRemains(key) then --Это наверное не надо потомучто мы при сборе итак проверяем. Если только как доп проверку.
+					Composite[key] = nil--убираем запись.
+					compositePointCol = compositePointCol - 1
+					if compositePointCol < 0 then compositePointCol = 0	end
 					PrintDebug("No more composite in point. Delete record in Composite")
-				end
-			else				
-				Composite[key].CompositeId = {}
-				Composite[key].VegModifierHandle = {}
-				Composite[key].PointSpawn = false
-				if Config.Debug then
+				else				
+					Composite[key].CompositeId = {}
+					Composite[key].VegModifierHandle = {}
+					Composite[key].PointSpawn = false
 					PrintDebug("Despawn point = " .. key)
-					--print("Spawn composite num = " .. tostring(spawnCompositeNum))
 				end
+				
 			end
-			
 		end
+		PrintDebug("Spawn composite num = " .. tostring(spawnCompositeNum))
 	end
 
 	--Экстренный деспавн если слишком много заспавненых composite
@@ -153,12 +151,8 @@ function checkRecordAndClear(playerPosition)
 		end
 	end
 	
-	--if Config.Debug then
-	--	print("Spawn composite num = " .. tostring(spawnCompositeNum))
-	--end
+	PrintDebug("Spawn composite num = " .. tostring(spawnCompositeNum))
 end
-
-
 
 function countComposites()
     local count = 0
@@ -1547,9 +1541,8 @@ function GetHerbCompositeNumEntities(compositeId, searchNum)
             end
         end
     end
-	if Config.Debug then
-		print("Entities2 = " .. json.encode(Entities2))
-	end
+	PrintDebug("Entities2 = " .. json.encode(Entities2))
+
 	return Entitys
 end
 

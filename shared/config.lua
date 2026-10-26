@@ -35,7 +35,7 @@ Config.composite_scenario = {
 	[18267955] = {herbHesh = "COMPOSITE_LOOTABLE_BITTERWEED_DEF", HerbID = 47},					--Гелениум
 	[1831047706] = {herbHesh = "COMPOSITE_LOOTABLE_BLACK_BERRY_DEF", HerbID = 5},				--Ежевика
 	[1246310848] = {herbHesh = "COMPOSITE_LOOTABLE_BLACK_CURRANT_DEF", HerbID = 6},				--Черная смородина
-	[0] = {herbHesh = "COMPOSITE_LOOTABLE_BLOOD_FLOWER_DEF", HerbID = 0},				       
+--	[0] = {herbHesh = "COMPOSITE_LOOTABLE_BLOOD_FLOWER_DEF", HerbID = 0},				       
 	[-1884795646] = {herbHesh = "COMPOSITE_LOOTABLE_BLOODFLOWER_DEF", HerbID = 48},				--Ваточник
 	[1108217698] = {herbHesh = "COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF", HerbID = 7},				--Корень лопуха
 	[-927747820] = {herbHesh = "COMPOSITE_LOOTABLE_CARDINAL_FLOWER_DEF", HerbID = 49},			--Лоберия пурпурная
@@ -80,7 +80,7 @@ Config.composite_scenario = {
 	[1838169307] = {herbHesh = "COMPOSITE_LOOTABLE_RAMS_HEAD_DEF", HerbID = 31},				--Гриб-баран
 	[-476352109] = {herbHesh = "COMPOSITE_LOOTABLE_RED_RASPBERRY_DEF", HerbID = 33},			--Малина
 	[-1735213851] = {herbHesh = "COMPOSITE_LOOTABLE_RED_SAGE_DEF", HerbID = 34},				--Красный шалфей
-	[0] = {herbHesh = "COMPOSITE_LOOTABLE_SALTBUSH_DEF", HerbID = 62},							--Лебеда
+--	[0] = {herbHesh = "COMPOSITE_LOOTABLE_SALTBUSH_DEF", HerbID = 62},							--Лебеда
 	[-2012396119] = {herbHesh = "COMPOSITE_LOOTABLE_TEXAS_BONNET_DEF", HerbID = 46},			--Люпин техасский
 	[-988677954] = {herbHesh = "COMPOSITE_LOOTABLE_VIOLET_SNOWDROP_DEF", HerbID = 38},			--Фиолетовый подснежник
 	[428946548] = {herbHesh = "COMPOSITE_LOOTABLE_VULTURE_EGG_DEF", HerbID = 60},				--Яйцо грифа(вместе с пеньком)
@@ -582,7 +582,7 @@ Config.Composites = {
 		eat = { isPoison = false },
     },
     [61] = { --Лук виноградничный
-        item = "consumable_herb_saltbush",
+        item = "consumable_herb_crows_garlic",
 		herbNameHash = `COMPOSITE_LOOTABLE_CROWS_GARLIC_DEF`,
         spawn = { minCol = 2, maxCol = 3 },
         eat = { isPoison = false },
@@ -647,7 +647,7 @@ Config.Composites = {
         herbNameHash = 0,
         spawn = { minCol = 1, maxCol = 3, isUnique = false },
         pickupAmount = 1,
-        eat = { isPoison = false },
+        eat = { isPoison = false, use = false },
 		lootExp = {
 			["herbalist"] = {Min = 2, Max = 3},
 			["crafting"] = {Min = 1, Max = 1},

@@ -1,11 +1,9 @@
 -- Древесные гнёзда выбираются по типам scenario point WB_EGG_NEST_*.
 -- Модели и виды взяты из оригинальных net_bird_egg_* скриптов.
 Config.TreeEggs = {
-    enabled = true,
     scanRadius = 100.0,
     scanIntervalMs = 2000,
     despawnDistance = 175.0,
-    maxActiveNests = 40,
     maxScenarioPoints = 600,
 
     -- Оригинал проверяет текущий ammo type, а не название оружия.

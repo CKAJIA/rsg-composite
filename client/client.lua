@@ -104,6 +104,7 @@ function startPointCheck()
 			
 			if PlayerMovedTooFar(playerPosition, prePlayerPosition, 3.0) then
 				-- Запускаем дистанционную очистку даже если рядом больше нет активных точек.
+				-- Если все очищено - то ничего не будет очищать и грузить систему потому что стоит условие if spawnCompositeNum > 0 then
 				checkRecordAndClear(playerPosition)																																 
 				local scenarios = getLootScenarioHash(playerPosition, SPAWN_RADIUS, 600)
 				for _, scenarioData in ipairs(scenarios) do
@@ -173,7 +174,7 @@ CreateThread(function()
 						local lootSuccess = view["4"] == true or view["4"] == 1
 						local targetModel = lootedEntity and lootedEntity ~= 0 and GetEntityModel(lootedEntity) or 0
 						if eventLoot.Model == nil or eventLoot.Model == 0 then
-							eventLoot.Model = GetEntityModel(lootedEntity)
+							eventLoot.Model = targetModel
 							--print("EVENT_LOOT_COMPLETE MODEL = " .. tostring(eventLoot.Model))
 						end
 						--для яиц и для сбора на лошади
@@ -186,8 +187,14 @@ CreateThread(function()
 								HandleTreeEggLootComplete(ped, lootedEntity, targetModel, lootSuccess)
 							end
 							if eventLoot.PlCoords and eventLoot.Model then
-								if IsValidHerbModel(eventLoot.Model) then
-									FindPicupCompositeAndCoords(eventLoot.PlCoords, eventLoot.Model, not eventLoot.Eat)
+								local pickupCoords = eventLoot.PlCoords
+								local lootedModel = eventLoot.Model
+								local isPickup = not eventLoot.Eat
+								
+								if IsValidHerbModel(lootedModel) then
+									CreateThread(function()
+										FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
+									end)
 								end
 							end
 						end						
@@ -204,7 +211,7 @@ CreateThread(function()
 					------------------------------------РАКИ------------------------------------
 					----------------------------------------------------------------------------
 					elseif Config.EnableCrayFish then
-						if eventAtIndex == joaat("EVENT_ITEM_PROMPT_INFO_REQUEST") then
+						if eventAtIndex == `EVENT_ITEM_PROMPT_INFO_REQUEST` then
 							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 2)
 							local entity = view["0"]
 							local inventoryItem = view["2"]
@@ -227,14 +234,14 @@ CreateThread(function()
 							
 								Citizen.InvokeNative(0xFD41D1D4350F6413, struct:Buffer())
 							end
-						elseif eventAtIndex == joaat("EVENT_INVENTORY_ITEM_PICKED_UP") then
+						elseif eventAtIndex == `EVENT_INVENTORY_ITEM_PICKED_UP` then
 							local view = exports["rsg-composite"]:DataViewNativeGetEventDataT(0, i, 5)
 							local inventoryItem = view["0"] --UPGRADE_FSH_BAIT_CRAYFISH(149706141)
 							local model = view["2"] --p_crayfish01x(-445365508)
 							local targetEntity = view["8"] --target_entity
 							
 							if inventoryItem == `UPGRADE_FSH_BAIT_CRAYFISH` and model == `p_crayfish01x` then
-								PrintDebug("[crayfish] inventoryItem = " .. tostring(inventoryItem), "model = " .. tostring(model), "eventData2 = " .. tostring(eventData2))
+								PrintDebug("[crayfish] inventoryItem = " .. tostring(inventoryItem), "model = " .. tostring(model), "targetEntity = " .. tostring(targetEntity))
 								
 								local holeIndex = FindHoleByCrayfishEntity(targetEntity)
 								
@@ -352,9 +359,9 @@ function IsScenarioPointActive(scenario)
     return Citizen.InvokeNative(0x0CC36D4156006509, scenario)
 end
 
---function SetScenarioPointActive(scenario, toggle)
---    return Citizen.InvokeNative(0xEEE4829304F93EEE, scenario, toggle)
---end
+function SetScenarioPointActive(scenario, toggle)
+    return Citizen.InvokeNative(0xEEE4829304F93EEE, scenario, toggle)
+end
 
 
 

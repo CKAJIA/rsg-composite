@@ -9,6 +9,9 @@ Config.Crayfish = {
 
     -- Объект рака, который оригинал создаёт у норы.
     crayfishModel = `p_crayfish01x`,
+	
+	-- Радиус поиска точек и их спавна/деспавна
+	searchRadius  = 100.0,
 
     -- Рак создаётся на groundZ + 0.1.
     crayfishZOffset = 0.1,

@@ -87,9 +87,6 @@ function RemoveTreeNest(scenarioId)
     end
 
     if nestData.nest and DoesEntityExist(nestData.nest) then
-        if nestData.eagleEyeRegistered then
-            unregisterTreeEggForEagleEye(nestData.nest)
-        end
         DeleteObject(nestData.nest)
     end
 
@@ -130,27 +127,18 @@ local function createTreeNest(scenarioId, speciesKey, scenarioCoords)
     end
 
     SetEntityAsMissionEntity(nest, true, true)
-    --local nestEagleEyeRegistered = registerTreeEggForEagleEye(nest)
 
     local offset = Config.TreeEggs.eggOffset or vector3(0.0, 0.0, 0.12)
     local rotation = Config.TreeEggs.eggRotation or vector3(0.0, 0.0, 0.0)
     local eggPosition = GetOffsetFromEntityInWorldCoords(nest, offset.x, offset.y, offset.z)
-    local egg = CreateObjectNoOffset(
-        eggModel, eggPosition.x, eggPosition.y, eggPosition.z,
-        false, false, false, true
-    )
+    local egg = CreateObjectNoOffset(eggModel, eggPosition.x, eggPosition.y, eggPosition.z, false, false, false, true)
     SetModelAsNoLongerNeeded(eggModel)
 
     local eggs = {}
     if egg and egg ~= 0 and DoesEntityExist(egg) then
         SetEntityAsMissionEntity(egg, true, true)
         SetEntityCanBeDamaged(egg, true)
-        AttachEntityToEntity(
-            egg, nest, 0,
-            offset.x, offset.y, offset.z,
-            rotation.x, rotation.y, rotation.z,
-            false, false, false, false, 2, true, false, false
-        )
+        AttachEntityToEntity(egg, nest, 0, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, false, false, false, false, 2, true, false, false)
         local eggEagleEyeRegistered = registerTreeEggForEagleEye(egg)
         eggs[1] = {
             entity = egg,
@@ -161,9 +149,6 @@ local function createTreeNest(scenarioId, speciesKey, scenarioCoords)
     end
 
     if #eggs == 0 then
-        if nestEagleEyeRegistered then
-            unregisterTreeEggForEagleEye(nest)
-        end
         DeleteObject(nest)
         logTreeEgg(('failed to create egg (%s)'):format(speciesKey))
         return false
@@ -171,7 +156,6 @@ local function createTreeNest(scenarioId, speciesKey, scenarioCoords)
 
     activeTreeNests[scenarioId] = {
         nest = nest,
-        eagleEyeRegistered = nestEagleEyeRegistered,
         speciesKey = speciesKey,
         coords = scenarioCoords,
         eggs = eggs,
@@ -204,10 +188,6 @@ local function handleNestHit(nestData, eggData, ped)
     end
 
     if smallGameAmmoTypes[hitAmmo] then
-        if nestData.eagleEyeRegistered and nestData.nest and DoesEntityExist(nestData.nest) then
-            unregisterTreeEggForEagleEye(nestData.nest)
-            nestData.eagleEyeRegistered = false
-        end
         if eggData.entity and DoesEntityExist(eggData.entity) then
             DetachEntity(eggData.entity, true, true)
             ActivatePhysics(eggData.entity)
@@ -311,7 +291,6 @@ local function scanTreeNests()
         scenarioBuffer:Buffer(), maxScenarioPoints
     ) or 0
     local count = math.min(foundCount, maxScenarioPoints)
-    local maxNests = math.max(0, Config.TreeEggs.maxActiveNests or 40)
 
     for i = 1, count, 1 do
         local scenarioId = scenarioBuffer:GetInt32(i * 8)
@@ -326,18 +305,9 @@ local function scanTreeNests()
                         SetScenarioPointActive(scenarioId, false)
                     end
                 elseif not pendingTreeEggPoints[pointKey] then
-                local currentCount = 0
-                for _ in pairs(activeTreeNests) do
-                    currentCount = currentCount + 1
-                end
-
-                if currentCount < maxNests then
-                    if #(coords - playerCoords) <= (Config.TreeEggs.scanRadius or 100.0) then
-                        createTreeNest(scenarioId, speciesKey, coords)
-                    end
-                else
-                    break
-                end
+					if #(coords - playerCoords) <= (Config.TreeEggs.scanRadius or 100.0) then
+						createTreeNest(scenarioId, speciesKey, coords)
+					end
                 end
             end
         end

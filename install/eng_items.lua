@@ -78,4 +78,4 @@
 	-----------------------------------------------
     -- CRAYFISH
     -----------------------------------------------
-	upgrade_fsh_bait_crayfish             = { name = 'upgrade_fsh_bait_crayfish',             label = 'Crayfish',                           weight = 10, type = 'item', image = 'upgrade_fsh_bait_crayfish.png',             unique = false, useable = true, shouldClose = true, description = 'Рак которого можно сварить или сделать из него наживку для ловли рыбы.' },
+	upgrade_fsh_bait_crayfish             = { name = 'upgrade_fsh_bait_crayfish',             label = 'Crayfish',                           weight = 10, type = 'item', image = 'upgrade_fsh_bait_crayfish.png',             unique = false, useable = true, shouldClose = true, description = 'A Crayfish that can be boiled or used as bait to catch fish.' },

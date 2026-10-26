@@ -99,7 +99,7 @@ local function CreateCrayfishAtHole(holeIndex)
 		return
 	end
 
-    local crayfish = CreateObject(crayFishModel, hole.coords.x, hole.coords.y, groundZ + Config.Crayfish.crayfishZOffset, true, true, false)
+    local crayfish = CreateObject(crayFishModel, hole.coords.x, hole.coords.y, groundZ + Config.Crayfish.crayfishZOffset, false, false, false)
 	
 	PrintDebug("[crayfish] Model crayfish = " .. tostring(crayfish))
 	
