@@ -1,5 +1,5 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-
+ 
 playerSpawn = false
 --local playerSpawn = false
 local SPAWN_RADIUS = 100.0--100.0
@@ -8,23 +8,33 @@ local eventLoot = {PlCoords = nil, Model = nil, Eat = false}
 local spawnedScenariopoint = {}
 local SCENARIO_BUF_SIZE = 8192
 local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
-
-
-RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
-	Wait(1000)
+ 
+ 
+-- Единственное место, где регистрируются события жизненного цикла ресурса
+-- (загрузка/выгрузка игрока, старт/стоп ресурса). utilites.lua, tree_eggs.lua
+-- и crayfish.lua сюда не лезут - они только отдают функции очистки
+-- (ResetComposites, TreeEggsReset, CrayfishReset, CrayfishCleanupAll),
+-- которые вызываются отсюда.
+local function LoadPlayerComposites()
 	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
 		Config.FullLootedScenarioPoint = compositeData
-		TriggerEvent('rsg-composite:client:CompositeDataLoaded')
-		playerSpawn = true	
+		playerSpawn = true
 		startPointCheck()
-	end)	
+	end)
+end
+ 
+RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
+	Wait(1000)
+	LoadPlayerComposites()
 end)
-
+ 
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
-    TriggerEvent('rsg-composite:client:CompositeDataUnloaded')
+	ResetComposites()
+	TreeEggsReset()
+	CrayfishReset()
 end)
-
+ 
 function CreateScenarioPoints()
 	for index, herb in pairs(deleted_herbs) do
 		if not spawnedScenariopoint[index] then
@@ -40,14 +50,14 @@ function CreateScenarioPoints()
 	end
 	Wait(500)
 end
-
+ 
 --BOOL DOES_SCENARIO_POINT_EXIST ( int scenario )  //0x841475AC96E794D1
 --void _SET_SCENARIO_POINT_ACTIVE ( int scenario, BOOL active )  //0xEEE4829304F93EEE
-
+ 
 function CreateScenarioPointHash(scenarioHash, x, y, z, heading, radius, p6, bool_p7)
 	return Citizen.InvokeNative(0x94B745CE41DB58A1, scenarioHash, x, y, z, heading, radius, p6, bool_p7, Citizen.ResultAsInteger())
 end
-
+ 
 function getLootScenarioHash(playerPosition, spawnRadius, foundNums)
     local scenarios = {}
 	--local DataStruct = DataView.ArrayBuffer(buffSize)
@@ -73,21 +83,21 @@ function getLootScenarioHash(playerPosition, spawnRadius, foundNums)
 	end
 	return scenarios
 end
-
+ 
 function ResolveEggScenario(scenarioData)
     local herbID = scenarioData.herbsScenarioPoint.HerbID
     local compositeHash = scenarioData.herbsScenarioPoint.herbHesh
-
+ 
     -- The world has one alligator-egg scenario hash. Choose the clutch size per spawn.
     if compositeHash == "COMPOSITE_LOOTABLE_GATOR_EGG_3_DEF" then
         local clutchSize = math.random(3, 5)
         herbID = 54 + clutchSize - 3
         compositeHash = ("COMPOSITE_LOOTABLE_GATOR_EGG_%d_DEF"):format(clutchSize)
     end
-
+ 
     return herbID, compositeHash
 end
-
+ 
 function startPointCheck()	
 	--void NETWORK_SET_SCRIPT_IS_SAFE_FOR_NETWORK_GAME ()  //0x3D0EAC6385DD6100
 	Citizen.InvokeNative(0x3D0EAC6385DD6100)
@@ -95,7 +105,7 @@ function startPointCheck()
 	--while not playerSpawn do -- Ждать, пока игрок не заспавнится
 	--	Wait(1000)
 	--end
-
+ 
 	CreateThread(function()
 		Wait(1)
 		while playerSpawn do
@@ -124,16 +134,16 @@ function startPointCheck()
 		end
 	end)
 end
-
+ 
 function PlayerMovedTooFar(currentPos, prevPos, radius)
 	if not prePlayerPosition then return true end --защита от нулевого вектора.
     local dist = #(currentPos - prevPos)  -- вычисляем расстояние между текущей и предыдущей позициями
     return dist > radius  -- возвращаем true, если расстояние больше заданного радиуса, иначе false
 end
-
+ 
 --local Eat = false
 local player = 0
-
+ 
 CreateThread(function()
 	while true do		
 		if not playerSpawn then
@@ -258,9 +268,10 @@ CreateThread(function()
 										DeleteCrayfishScenario(holeIndex)
 									
 										PrintDebug(('[crayfish] Нора %d: добыто %d/%d, exhausted=%s'):format(holeIndex, state.collected, state.limit, tostring(state.exhausted)))
-
+ 
 										-- Здесь выдача награды и т.д.
-										TriggerServerEvent('rsg-composite:server:Gathered', 200, 1)
+										-- amount не передаём - сервер сам возьмёт Config.Composites[200].pickupAmount.
+										TriggerServerEvent('rsg-composite:server:Gathered', 200)
 										
 										--если точка полностью собрана - отсылаем в БД
 										if state.exhausted then
@@ -287,7 +298,7 @@ CreateThread(function()
 		end
 	end
 end)
-
+ 
 function IsValidHerbModel(model)
     -- Проверяем что это именно хеш растения (например из GetHerbIDFromLootedModel)
     if model and model ~= 0 then
@@ -296,42 +307,42 @@ function IsValidHerbModel(model)
     end
     return false
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 function DumpTable(tbl)
     for k, v in pairs(tbl) do
         print(k, v)
     end
 end
-
+ 
 function GetScenarioPointType(id)
     return Citizen.InvokeNative(0xA92450B5AE687AAF, id)
 end
@@ -339,68 +350,65 @@ end
 function GetScenarioPointCoords(scenario, bool_p1)
 	return Citizen.InvokeNative(0xA8452DD321607029, scenario, bool_p1, Citizen.ResultAsVector())
 end
-
+ 
 function GetScenarioPointHeading(scenario, bool_p1)
 	return Citizen.InvokeNative(0xB93EA7184BAA85C3, scenario, bool_p1, Citizen.ResultAsFloat())
 end
-
-
-
+ 
+ 
+ 
 function GetScenarioPointsInArea(posX, posY, posZ, radius, scenariosInRadius, size)
 	return Citizen.InvokeNative(0x345EC3B7EBDE1CB5, posX, posY, posZ, radius, scenariosInRadius, size, Citizen.ResultAsInteger())
 end
-
-
+ 
+ 
 function DoesScenarioPointExist(scenario)
     return Citizen.InvokeNative(0x841475AC96E794D1, scenario)
 end
-
+ 
 function IsScenarioPointActive(scenario)
     return Citizen.InvokeNative(0x0CC36D4156006509, scenario)
 end
-
+ 
 function SetScenarioPointActive(scenario, toggle)
     return Citizen.InvokeNative(0xEEE4829304F93EEE, scenario, toggle)
 end
-
-
-
+ 
+ 
+ 
 function FindScenarioOfTypeHash(posX, posY, posZ, scenarioType, distance) --FIND_SCENARIO_OF_TYPE_HASH
 	return Citizen.InvokeNative(0xF533D68FF970D190, posX, posY, posZ, scenarioType, distance, 0, false, Citizen.ResultAsInteger())
 end
-
+ 
 function DoesScenarioOfTypeExistInAreaHash(posX, posY, posZ, scenarioType, distance) --DOES_SCENARIO_OF_TYPE_EXIST_IN_AREA_HASH
 	return Citizen.InvokeNative(0x6EEAD6AF637DA752, posX, posY, posZ, scenarioType, distance, false)
 end
-
+ 
 function GetScenarioPointRadius(id)
     return Citizen.InvokeNative(0x6718F40313A2B5A6, id, Citizen.ResultAsFloat())
 end
-
+ 
 --При перезагрузке очищает все что вносили в таблицу
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
-		playerSpawn = false
-		--void _DELETE_SCENARIO_POINT ( int scenario )  //0x81948DFE4F5A0283
-		for index, scenariopointId in pairs(spawnedScenariopoint) do
-			if DoesScenarioPointExist(scenariopointId) then
-				Citizen.InvokeNative(0x81948DFE4F5A0283, scenariopointId)
-				spawnedScenariopoint[index] = nil
-				--print("Индекс:", index, "ID точки сценария:", scenariopointId)				
-			end
+	playerSpawn = false
+	--void _DELETE_SCENARIO_POINT ( int scenario )  //0x81948DFE4F5A0283
+	for index, scenariopointId in pairs(spawnedScenariopoint) do
+		if DoesScenarioPointExist(scenariopointId) then
+			Citizen.InvokeNative(0x81948DFE4F5A0283, scenariopointId)
+			spawnedScenariopoint[index] = nil
+			--print("Индекс:", index, "ID точки сценария:", scenariopointId)
 		end
+	end
+	ResetComposites()
+	TreeEggsReset()
+	CrayfishCleanupAll()
 end)
-
+ 
 AddEventHandler('onResourceStart', function(resource)
 	if resource == GetCurrentResourceName() then
 		if LocalPlayer.state.isLoggedIn then --это для перезапуска если в игре
-			--TriggerEvent('RSGCore:Client:OnPlayerLoaded')
-			RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
-				Config.FullLootedScenarioPoint = compositeData
-				TriggerEvent('rsg-composite:client:CompositeDataLoaded')
-				playerSpawn = true	
-				startPointCheck()
-			end)
+			LoadPlayerComposites()
 		end
 	end
 end)

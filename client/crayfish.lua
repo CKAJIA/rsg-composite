@@ -1,5 +1,7 @@
 local activeHoles = {}
-local crayfishDataLoaded = false
+-- playerSpawn уже выставляется в true в client.lua только после того, как
+-- Config.FullLootedScenarioPoint загружен с сервера, поэтому отдельный флаг
+-- "данные загружены" здесь не нужен.
 
 
 function GetHoleState(holeIndex)
@@ -223,31 +225,34 @@ local function EnsureCrayfishPin(holeIndex)
     )
 end
 
-local function CleanupAll()
-	for holeIndex, state in pairs(activeHoles) do
-        DeleteCrayfishAtHole(holeIndex)
-        DeleteCrayfishScenario(holeIndex)
-
-        local pin = state.pin
-
-        if pin and pin ~= 0 then
-            if Citizen.InvokeNative(0x1FF441D7954F8709, pin) then
-                Citizen.InvokeNative(
-                    0xD2B9C78537ED5759,
-                    pin
-                )
-            end
-        end
-
-        state.pin = nil
-    end
+-- Полная очистка (раки, сценарии, пины). Вызывается из client.lua при onResourceStop.
+function CrayfishCleanupAll()
+	if Config.EnableCrayFish then
+		for holeIndex, state in pairs(activeHoles) do
+			DeleteCrayfishAtHole(holeIndex)
+			DeleteCrayfishScenario(holeIndex)
+	
+			local pin = state.pin
+	
+			if pin and pin ~= 0 then
+				if Citizen.InvokeNative(0x1FF441D7954F8709, pin) then
+					Citizen.InvokeNative(
+						0xD2B9C78537ED5759,
+						pin
+					)
+				end
+			end
+	
+			state.pin = nil
+		end
+	end
 end
 
 
 
 CreateThread(function()
     while true do
-		local enabled = playerSpawn and crayfishDataLoaded and Config.EnableCrayFish
+		local enabled = playerSpawn and Config.EnableCrayFish
 	
         if enabled then
             local playerCoords = GetEntityCoords(PlayerPedId())
@@ -289,18 +294,9 @@ CreateThread(function()
     end
 end)
 
---Ивенты для проверки загрузились ли данные с БД
-AddEventHandler('rsg-composite:client:CompositeDataLoaded', function()
-    crayfishDataLoaded = true
-end)
-
-AddEventHandler('rsg-composite:client:CompositeDataUnloaded', function()
-    crayfishDataLoaded = false
-end)
-
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-	crayfishDataLoaded = false
-
+-- Сброс состояния нор (без удаления пинов). Вызывается из client.lua
+-- при RSGCore:Client:OnPlayerUnload.
+function CrayfishReset()
     for holeIndex in pairs(activeHoles) do
         DeleteCrayfishAtHole(holeIndex)
         DeleteCrayfishScenario(holeIndex)
@@ -311,10 +307,4 @@ RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
         state.pending = false
         state.exhausted = false
     end
-end)
-
---При перезагрузке очищает все что вносили в таблицу
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    CleanupAll()
-end)
+end

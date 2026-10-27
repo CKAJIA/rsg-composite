@@ -347,18 +347,14 @@ CreateThread(function()
     end
 end)
 
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-    pendingTreeEggPoints = {}
-    for scenarioId in pairs(activeTreeNests) do
-        RemoveTreeNest(scenarioId)
-    end
-end)
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then return end
-
-    for scenarioId in pairs(activeTreeNests) do
-        RemoveTreeNest(scenarioId)
-    end
-end)
+-- Очистка гнёзд. Вызывается из client.lua: при RSGCore:Client:OnPlayerUnload
+-- и при onResourceStop (там же обрабатываются и остальные lifecycle-события ресурса).
+function TreeEggsReset()
+    if Config.EnableTreeEggs then
+		pendingTreeEggPoints = {}
+		for scenarioId in pairs(activeTreeNests) do
+			RemoveTreeNest(scenarioId)
+		end
+	end
+end
 

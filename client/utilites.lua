@@ -1,6 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-
-local playerSpawn = false
+ 
+-- playerSpawn - глобальная переменная, объявлена и управляется из client.lua.
 local Composite = {}
 local RegisteredEagleEyeEntities = {}
 local DELETE_DISTANCE = 2000.0
@@ -11,7 +11,7 @@ local PlaySoundCoordsTable = {}
 local MAX_RECORD_IN_TABLE = 500 --на самом деле 500 точек держится в таблице.
 local isBusy = false
 local isPickUp = false
-
+ 
 -- Registration lets the game show Eagle Eye clues when appropriate; this
 -- resource does not need to poll the player's Eagle Eye state or create PTFX.
 function RegisterEntityForEagleEye(entity, tint)
@@ -31,21 +31,21 @@ function RegisterEntityForEagleEye(entity, tint)
 	
 	return true
 end
-
+ 
 function UnregisterEntityForEagleEye(entity)
 	if not entity or entity == 0 or not DoesEntityExist(entity) then
 		return
 	end
-
+ 
 	Citizen.InvokeNative(0x9DAE1380CC5C6451, PlayerId(), entity) --_UNREGISTER_EAGLE_EYE_FOR_ENTITY
 	Citizen.InvokeNative(0xDC5E09D012D759C4, entity, entity, 0) --_EAGLE_EYE_REMOVE_PARTICLE_EFFECT_FROM_ENTITY
 end
-
+ 
 local function RegisterCompositeEagleEye(pointKey, entity, tint)
 	if not entity or entity == 0 or not DoesEntityExist(entity) then
 		return
 	end
-
+ 
 	local registered = RegisteredEagleEyeEntities[pointKey]
 	if not registered then
 		registered = {}
@@ -59,12 +59,12 @@ local function RegisterCompositeEagleEye(pointKey, entity, tint)
 		UnregisterEntityForEagleEye(oldEntity)
 		registered[oldEntity] = nil
 	end
-
+ 
 	if RegisterEntityForEagleEye(entity, tint) then
 		registered[entity] = true
 	end
 end
-
+ 
 local function UnregisterCompositeEagleEye(pointKey)
 	local registered = RegisteredEagleEyeEntities[pointKey]
 	if not registered then return end
@@ -73,7 +73,7 @@ local function UnregisterCompositeEagleEye(pointKey)
 	end
 	RegisteredEagleEyeEntities[pointKey] = nil
 end
-
+ 
 -- ID ресурса сопоставлены по названиям растений с оригинальным herb.ysc.c.
 -- Orchid tree composites используют groundSetting=2 и отдельное смещение от scenario.
 local TREE_ORCHID_OFFSETS = {
@@ -87,10 +87,10 @@ local TREE_ORCHID_OFFSETS = {
 	[36] = vector3(0.0, 0.737008, 1.81999), -- Spider
 	[37] = vector3(0.0, 0.5, 1.81999), -- Vanilla Flower
 }
-
+ 
 local compositePointCol = 0
 local spawnCompositeNum = 0 --на случай если слишком много заспавнено и не очистилось
-
+ 
 --нужно вычислить какой ресурс не дает спавнить все композиты.
 --для вычитания ресурсов - надо отключить эту функцию и смотреть дойдет ли до 180
 --и включить дебаг
@@ -135,7 +135,7 @@ function checkRecordAndClear(playerPosition)
 		end
 		PrintDebug("Spawn composite num = " .. tostring(spawnCompositeNum))
 	end
-
+ 
 	--Экстренный деспавн если слишком много заспавненых composite
 	--максимум можно показать сразу 180 composite
 	if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then
@@ -153,7 +153,7 @@ function checkRecordAndClear(playerPosition)
 	
 	PrintDebug("Spawn composite num = " .. tostring(spawnCompositeNum))
 end
-
+ 
 function countComposites()
     local count = 0
     for _ in pairs(Composite) do
@@ -161,11 +161,11 @@ function countComposites()
     end
     return count
 end
-
+ 
 function DeactivatePoints(scenario)
 	SetScenarioPointActive(scenario, false)
 end
-
+ 
 function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, sPackedSlots)
 	local playerPosition = GetEntityCoords(PlayerPedId())
 	local pointCoords = sPointCoords
@@ -240,7 +240,7 @@ function StartCreateComposite(sHerbID, sCompositeHash, sPointCoords, sHeading, s
 		return
 	end	
 end
-
+ 
 -- Функция для спауна композитных объектов
 function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
     for index = 1, #packedSlots do
@@ -262,7 +262,7 @@ function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, pac
         end
     end
 end
-
+ 
 --запуск спавна точки из client
 function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 	--local serverComposite = {}
@@ -282,7 +282,7 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		--local SpawnCol = Config.compositeOptionsSpawn[HerbID].spawnCol
 		local MinCol = spawnData.minCol
 		local MaxCol = spawnData.maxCol
-
+ 
 		if SpawnCol ~= 3 then--Это для заполнения всех растений кроме одиночных
 			packedSlots = GeneratePackedCompositeSlots(SpawnCol, MinCol, MaxCol, variantMax)
 		else--Это для одиночных
@@ -303,7 +303,7 @@ function CreateServerComposite(herbID, hash, pointCoords, pointHeading)
 		StartCreateComposite(Composite[pointCoords.xy].HerbID, Composite[pointCoords.xy].CompositeHash, pointCoords, pointHeading, Composite[pointCoords.xy].PackedSlots)
 	end
 end
-
+ 
 function CreatePrompts()
 	local str = CreateVarString(10, 'LITERAL_STRING', Config.PromtName)
 	PickupPrompt = PromptRegisterBegin()
@@ -316,21 +316,21 @@ function CreatePrompts()
 	--print("Create Prompt")
 	return PickupPrompt
 end
-
+ 
 function GeneratePackedCompositeSlots(spawnCol, minSlots, maxSlots, variantMax)
     local rotationPool, offsetPool = BuildCompositeRotationPool(spawnCol)
     local slotCount = 0
     local offset = 0
     local variant = 0
 	local packedSlots = {}
-
+ 
     if maxSlots > 4 then
         maxSlots = 4
     end
     if minSlots <= 0 then
         minSlots = 1
     end
-
+ 
 	maxSlots = math.min(maxSlots, 4)
 	minSlots = math.max(1, math.min(minSlots, maxSlots))
 	slotCount = math.random(minSlots, maxSlots)
@@ -352,34 +352,34 @@ function GeneratePackedCompositeSlots(spawnCol, minSlots, maxSlots, variantMax)
         else
 			variant = 0
 		end
-
+ 
 		local packedValue = ((rotationPool[index] | (offset << 9)) | (variant << 13)) | 1073741824
-
+ 
 		packedSlots[index] = packedValue --заполнили packedSlots
     end
 	return packedSlots
 end
-
-
+ 
+ 
 function GenerateSinglePackedCompositeSlot(spawnCol, variantMax)
 	local rotationPool, offsetPool = BuildCompositeRotationPool(spawnCol)
 	local variant = 0
 	local packedSlots = {}
-
+ 
 	if variantMax > 0 then	--тут только тысячелистник 4 - но это для создания одночных функция
 		variant = math.random(0, variantMax)
 	end
-
+ 
 	local packedValue = ((rotationPool[1] | (0 << 9)) | (variant << 13)) | 1073741824
-
+ 
 	packedSlots[1] = packedValue --заполнили packedSlots
 	return packedSlots
 end
-
+ 
 function BuildCompositeRotationPool(spawnCol)
     local rotationPool = {}
     local offsetPool = {}
-
+ 
     if spawnCol == 0 then
         offsetPool[1] = 1
         offsetPool[2] = 2
@@ -401,14 +401,14 @@ function BuildCompositeRotationPool(spawnCol)
         offsetPool[2] = 3
         offsetPool[3] = 4
     end
-
+ 
     rotationPool[1] = 0
     rotationPool[2] = 67
     rotationPool[3] = 139
     rotationPool[4] = 223
     rotationPool[5] = 293
     rotationPool[6] = 359
-
+ 
     local lastIndex = 6
     while lastIndex > 1 do
         local j = math.random(1, lastIndex)--Тут возможно надо + 2
@@ -420,10 +420,10 @@ function BuildCompositeRotationPool(spawnCol)
 	
     return rotationPool, offsetPool
 end
-
+ 
 function CreateHerbsCoords(ScenarioPointCoords, packedSlots, HerbID)
 	local herbCoords = {}
-
+ 
     for index = 1, 4 do
         local Offset, Rotation, variant = GetRotationOffset(index, packedSlots)
 		
@@ -438,24 +438,24 @@ function CreateHerbsCoords(ScenarioPointCoords, packedSlots, HerbID)
 			herbCoords[index] = vector3(0.0, 0.0, 0.0)
 		end
     end
-
+ 
     return herbCoords
 end
-
+ 
 function GetGroundZFor3DCoord(x, y, z)
     if x == 0.0 and y == 0.0 and z == 0.0 then 
 		return false
 	end
 	--local x, y, z = table.unpack(coords)
 	local retval, groundz, normal = GetGroundZAndNormalFor_3dCoord(x, y, z)
-
+ 
 	if retval then
 		return true
 	else
 		return false
 	end
 end
-
+ 
 function GetRotationOffset(slotIndex, packedSlots)
 	local packedValue = packedSlots[slotIndex]
 	
@@ -466,10 +466,10 @@ function GetRotationOffset(slotIndex, packedSlots)
 	local rotation = packedValue & 511
     local offset   = (packedValue & 3584) >> 9
     local variant  = (packedValue & 57344) >> 13
-
+ 
     return offset, rotation, variant
 end
-
+ 
 function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, packedSlots, pointCoords)
     local compositeId = 0
 	local vegModifierHandle = 0
@@ -502,7 +502,7 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
 					herbCoords[index].x, herbCoords[index].y, herbCoords[index].z,
 					tostring(index)
 				))
-
+ 
 			--если глючный composite - то удаляем его сразу(обычно начинает если уже больше 180 заспавнено.)
 			if not compositeId or compositeId <= 0 then
 				print(("ERROR: composite create failed | id=%s | herbID=%s | hash=%s | active=%s/%s | herbCoords=vec3(%.2f, %.2f, %.2f)"):format(
@@ -544,7 +544,7 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, pack
         end
     end
 end
-
+ 
 --Despawn herbs
 function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 	--при удалении composite останавливаем звук и удаляем запись.
@@ -595,7 +595,7 @@ function deleteComposite(coordsXY, compositeId, vegModifierHandle, entitys)
 	--compositePointCol = compositePointCol - 1
 	--if compositePointCol < 0 then compositePointCol = 0	end
 end
-
+ 
 function DeleteSound(coordsXY)
 	local soundID = PlaySoundCoordsTable[coordsXY]
 	if soundID then
@@ -603,11 +603,11 @@ function DeleteSound(coordsXY)
 		PlaySoundCoordsTable[coordsXY] = nil
 	end
 end
-
+ 
 function DeleteEffect(coordsXY)
 	UnregisterCompositeEagleEye(coordsXY)
 end
-
+ 
 function playSound(pointCoords)--звук рядом с коллекционными предметами спавнить когда расстояние меньше 10.0
 	--if Citizen.InvokeNative(0xD9130842D7226045, "RDRO_Collectible_Sounds_Travelling_Saleswoman", 0) then
 	local i = 1
@@ -624,7 +624,7 @@ function playSound(pointCoords)--звук рядом с коллекционны
 		PlaySoundCoordsTable[pointCoords.xy] = nil
 	end
 end
-
+ 
 function stopSound(soundID) --удаляет звук если расстояние больше 10 метров или если сорвали растение
 	if soundID and soundID > 0 then
 		StopSoundWithName("collectible_lure", "RDRO_Collectible_Sounds_Travelling_Saleswoman")--Any STOP_SOUND_WITH_NAME ( char* audioName, char* audioRef )  //0x0F2A2175734926D8
@@ -632,7 +632,7 @@ function stopSound(soundID) --удаляет звук если расстоян�
 	end
 	ReleaseSoundset("RDRO_Collectible_Sounds_Travelling_Saleswoman")--void _RELEASE_SOUNDSET ( const char* soundsetName )  //0x531A78D6BF27014B
 end
-
+ 
 function RareHerbs(HerbID, HerbCoords, pointCoords)
 	if Config.Composites[HerbID].spawn.isUnique then
 		local foundEntities = CreateVolumeAndGetEntity(HerbCoords, 0.5)
@@ -649,7 +649,7 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 		end
 	end
 end
-
+ 
 CreateThread(function()
     while true do
 		if playerSpawn then
@@ -701,7 +701,7 @@ CreateThread(function()
 		end
     end
 end)
-
+ 
 function PromptsSetGroup(PickupPrompt, group_Promt)
 	if PickupPrompt and PromptIsValid(PickupPrompt) then
 		PromptSetEnabled(PickupPrompt, true)
@@ -709,7 +709,7 @@ function PromptsSetGroup(PickupPrompt, group_Promt)
 		PromptSetGroup(PickupPrompt, group_Promt)
 	end
 end
-
+ 
 function DeletePromptAndGroup(pointCoords)
 	if Composite[pointCoords].PickupPrompt then
 		PromptRemoveGroup(Composite[pointCoords].PickupPrompt, Composite[pointCoords].GroupPromt)
@@ -718,7 +718,7 @@ function DeletePromptAndGroup(pointCoords)
 		Composite[pointCoords].PickupPrompt = nil		
 	end
 end
-
+ 
 function PicUpOrchid(pointCoords, pickupPrompt, pickTime, herbID)
 	--local picking = false
 	if isPickUp then return end
@@ -765,7 +765,7 @@ function PicUpOrchid(pointCoords, pickupPrompt, pickTime, herbID)
 		Wait(pickTime * 1000) -- чтобы не было повторных нажатий
 		ClearPedTasks(PlayerPed)
 		ClearPedSecondaryTask(PlayerPed)
-
+ 
 		FindPicupCompositeAndCoords(playerPosition, model, true)
 		picking = false
 		Wait(0)
@@ -774,7 +774,7 @@ function PicUpOrchid(pointCoords, pickupPrompt, pickTime, herbID)
 		isPickUp = false		
 	end	
 end
-
+ 
 function SPHerbs(HerbID, herbCoords, pointCoords)
 	if isSPHerbs(HerbID) then
 		local attachEntity = nil
@@ -790,7 +790,7 @@ function SPHerbs(HerbID, herbCoords, pointCoords)
 			elseif isSPHerbsOneEntities(HerbID) and foundEntities[1] then
 				attachEntity = foundEntities[1]
 			end
-
+ 
 			if DoesEntityExist(attachEntity) then
 				Composite[pointCoords.xy].AttachEntity = attachEntity
 				Composite[pointCoords.xy].Entitys = foundEntities
@@ -828,27 +828,27 @@ function CreateVolumeAndGetEntity(herbCoords, scale) --scale = 5.0
 	end
 	return foundEntities
 end
-
-
-
+ 
+ 
+ 
 function isVectorEmpty(herbVector)
 	return (herbVector == nil) or (herbVector.x == 0.0 and herbVector.y == 0.0 and herbVector.z == 0.0)
 end
-
+ 
 function correctCoords(coords, heading)
     local sinYaw = math.sin(heading)
     local cosYaw = math.cos(heading)
     local rotX = (coords.x * cosYaw) - (coords.y * sinYaw)
     local rotY = (coords.x * sinYaw) + (coords.y * cosYaw)
-
+ 
 	local correct = vector3(rotX, rotY, coords.z)
     return correct
 end
-
+ 
 function correctHeading(scenarioPointHeading)
     return (scenarioPointHeading * 0.01745329)
 end
-
+ 
 --так можно устроить проверку на сорваных растений на точке
 function func_79(iParam1)
     return (f_4[iParam1 + 1] & 4096) ~= 0
@@ -856,11 +856,11 @@ end
 function HasOnGroundFlag(packedSlots, slotIndex)
     return (packedSlots[slotIndex] >> 1) & 4096 > 0
 end
-
+ 
 function IsControlAlwaysPressed(inputGroup, control)
     return IsControlPressed(inputGroup, control) or IsDisabledControlPressed(inputGroup, control)
 end
-
+ 
 -- Пытается найти ближайший scenario/слот после лута и применить результат:
 -- выдача награды/поедание + очистка слота + отключение точки если пусто.
 function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
@@ -870,27 +870,27 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     if IsPedOnMount(ped) and not IsPedInAnyVehicle(ped) then
         searchCoords = GetEntityCoords(ped)
     end
-
+ 
     -- 2) Пытаемся найти scenario/слот (иногда нужен небольшой “догон” после TaskLootEntity)
     local maxRetries, retryDelayMs = 2, 500
     local nearestScenario, pointCoords, HerbID, slotIndex = nil, nil, nil, nil
-
+ 
     for attempt = 1, (maxRetries + 1) do
         nearestScenario, pointCoords, HerbID, slotIndex = GetNearestScenario(searchCoords, lootedModel)
         if nearestScenario then break end
         if attempt <= maxRetries then Wait(retryDelayMs) end
     end
-
+ 
     if not nearestScenario then
         PrintDebug("FindPicupCompositeAndCoords: nearestScenario not found")
         return
     end
-
+ 
     if not slotIndex then
         PrintDebug("ERROR: No slotIndex for nearestScenario point")
         return
     end	
-
+ 
     -- 3) Работаем с записью композита
     local key = pointCoords.xy
     local comp = Composite[key]
@@ -900,7 +900,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     end
 	
 	local nearestCompositeId = Composite[key].CompositeId[slotIndex]
-
+ 
     -- 4) Если уникальные — выключаем эффекты/звуки на точке
     if Config.Composites[HerbID].spawn.isUnique then
         comp.AttachEntity = nil
@@ -909,13 +909,13 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     if PlaySoundCoordsTable[key] then
         DeleteSound(key)
     end
-
+ 
     -- 5) Серверная логика: pickup vs eat
-    local amount = GetHerbPicupAmountID(HerbID)
+    -- amount не передаётся - сервер сам решает сколько выдать по HerbID (GetCompositeData(HerbID).pickupAmount).
     if isPickup then
 		--мы собрали
-        TriggerServerEvent("rsg-composite:server:Gathered", HerbID, amount)
-		PrintDebug("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId .. " num = " .. amount)
+        TriggerServerEvent("rsg-composite:server:Gathered", HerbID)
+		PrintDebug("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId)
     else
 		--мы съели
         Eating(HerbID)
@@ -930,7 +930,7 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
 		TelemetryHerbPicked(herbType)
 		CompendiumHerbPicked(herbType, searchCoords)
 	end
-
+ 
 	-- 6) Помечаем конкретный слот собранным в локальном учёте.
 	-- Оставляем composite в мире: его остатки не должны пропадать перед игроком;
 	-- общий despawn удалит composite, когда игрок отойдёт от точки.
@@ -940,29 +940,29 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
 		comp.PackedSlots[slotIndex] = packedValue | 4096
 	end
     comp.HerbCoords[slotIndex] = vector3(0.0, 0.0, 0.0)
-
+ 
     -- 7) Если точка вычищена полностью — отключаем scenario и сохраняем в “вылутанные”
     if not HerbsRemains(key) then
         SetScenarioPointActive(nearestScenario, false)
-
+ 
         Config.FullLootedScenarioPoint[KeyFromCoords(key)] = nearestScenario
         TriggerServerEvent("rsg-composite:server:SaveGatheredPoint", KeyFromCoords(key), nearestScenario)
 		PrintDebug("No more composite in point. Add record to Config.FullLootedScenarioPoint")
     end
 end
-
+ 
 function AreLootHerbIDsCompatible(modelHerbID, scenarioHerbID)
     if modelHerbID == scenarioHerbID then
         return true
     end
-
+ 
     -- The same world model/scenario can represent randomized alligator clutches
     -- with IDs 54–56, so compatibility must work in either argument order.
     local modelIsAlligatorEgg = modelHerbID >= 54 and modelHerbID <= 56
     local scenarioIsAlligatorEgg = scenarioHerbID >= 54 and scenarioHerbID <= 56
     return modelIsAlligatorEgg and scenarioIsAlligatorEgg
 end
-
+ 
 function GetNearestScenario(PickUpPlayerCoords, Model)
 	local radius = 30.0 --не меньше 15 потому что яйца тогда при отходе не берутся.
 	local minDistance = radius
@@ -1000,7 +1000,7 @@ function GetNearestScenario(PickUpPlayerCoords, Model)
 	end
 	return scenar, pCoords, herbId, compositeIndex
 end
-
+ 
 function HerbsRemains(nearestScenarioPointIndex)
 	-- Теперь пройдемся по всем координатам растений и найдем ближайшую
 	for index = 1, 4 do
@@ -1010,7 +1010,7 @@ function HerbsRemains(nearestScenarioPointIndex)
 	end
 	return false
 end
-
+ 
 function Eating(herbID)
 	--local Options = Config.compositeOptionsEat[herbID]
 	local Options = Config.Composites[herbID].eat
@@ -1026,7 +1026,7 @@ function Eating(herbID)
 			--print("health = " .. health, "stamina = " .. stamina, "stress = " .. stress, "hunger = " .. hunger, "thirst = " .. thirst, "clean = " .. clean)
 			ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		end
-
+ 
 		if Options.isPoison then
 			if GetEntityHealth(player) > 0 and IsEntityDead(player) == false then
 				PlayAnimScenesVomit()
@@ -1035,7 +1035,7 @@ function Eating(herbID)
 		end
 	end
 end
-
+ 
 RegisterNetEvent("rsg-composite:client:Eating", function(herbID, itemName)
     if isBusy then
         return
@@ -1058,23 +1058,23 @@ RegisterNetEvent("rsg-composite:client:Eating", function(herbID, itemName)
         isBusy = not isBusy
     end
 end)
-
+ 
 function loadAnimDict(dict, anim)
     while not HasAnimDictLoaded(dict) do Wait(0) RequestAnimDict(dict) end
     return dict
 end
-
+ 
 -- Универсальная функция для получения значения параметра (float)
 function GetAttributeValue(attribute)
 	if type(attribute) == "table" and attribute.Min and attribute.Max then
 		local min = tonumber(attribute.Min)
 		local max = tonumber(attribute.Max)
-
+ 
 		-- Защита: если случайно Min больше Max, меняем местами
 		if min > max then
 			min, max = max, min
 		end
-
+ 
 		-- Возвращаем случайное float-значение в диапазоне
 		--return min + math.random() * (max - min) * 1.0--так будет возвращать дробное значение т.е. 1.245
 		return math.random(min, max) * 1.0 --так просто float 3.0 или -5.0
@@ -1083,19 +1083,19 @@ function GetAttributeValue(attribute)
 		-- Если просто число — возвращаем как float
 		return attribute * 1.0
 	end
-
+ 
 	-- Если ничего не подошло — возвращаем 0.0
 	return 0.0
 end
-
-
-
+ 
+ 
+ 
 --Надо разобраться с чистотой- почему-то то прибавляет то отнимает
 function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 	local player = PlayerPedId()
-
+ 
 	SetPlayerHealth(health)
-
+ 
 	if stamina ~= 0 then
 		ChangePedStamina(player, stamina)
 	end
@@ -1116,7 +1116,7 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 		--TriggerServerEvent("RSGCore:Server:SetMetaData", "cleanliness", RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
 	end
 end
-
+ 
 --в общем 600
 function SetPlayerHealth(health)
 	local player = PlayerPedId()
@@ -1137,7 +1137,7 @@ function SetPlayerHealth(health)
 	end
 	SetEntityHealth(player, math.floor(currentHealth + ostatok)) --остаток направляем в полоску(можно превышать)
 end
-
+ 
 --анимация рвоты
 function PlayAnimScenesVomit()
 	local player = PlayerPedId()
@@ -1161,43 +1161,43 @@ function PlayAnimScenesVomit()
 		Citizen.InvokeNative(0x84EEDB2C6E650000, animscene) --// _DELETE_ANIM_SCENE
 	end
 end
-
+ 
 function isMushroom(HerbID)
     if HerbID == 4 or HerbID == 8 or HerbID == 28 or HerbID == 31 then
         return true
     end
     return false
 end
-
+ 
 function isEggs(HerbID)
     if HerbID == 54 or HerbID == 55 or HerbID == 56 or HerbID == 57 or HerbID == 58 or HerbID == 59 or HerbID == 60 then
         return true
     end
     return false
 end
-
+ 
 function isRareHerbs(HerbID)
 	if (HerbID == 45 or HerbID == 47 or HerbID == 48 or HerbID == 46 or HerbID == 49 or HerbID == 50 or HerbID == 51 or HerbID == 52 or HerbID == 53 or HerbID == 44) then
 		return true
 	end
 	return false
 end
-
+ 
 function isSPHerbs(HerbID)
 	if (HerbID == 1 or HerbID == 9 or HerbID == 10 or HerbID == 14 or HerbID == 17 or HerbID == 21 or HerbID == 22 or HerbID == 24 or HerbID == 25 or HerbID == 30 or HerbID == 32 or HerbID == 35 or HerbID == 36) then
 		return true
 	end
 	return false
 end
-
+ 
 function isSPHerbsOneEntities(HerbID)
 	if HerbID == 1 or HerbID == 9 or HerbID == 25 or HerbID == 32 or HerbID == 14 or HerbID == 24 or HerbID == 22 or HerbID == 30 or HerbID == 35 then
 		return true
 	end
-
+ 
 	return false
 end
-
+ 
 --[[function CheckKnife()
 	if RSGCore.Functions.HasItem('weapon_melee_knife', 1) then			
 		Citizen.InvokeNative(0x5E3BDDBCB83F3D84, PlayerPedId(), joaat('weapon_melee_knife'), 0, false, true)
@@ -1213,14 +1213,14 @@ function equipKnife(HerbID)
 	end
 	return 9
 end
-
+ 
 function getPickupTime(HerbID)
 	if HerbID == 14 or HerbID == 24 or HerbID == 22 or HerbID == 30 or HerbID == 35 then
 		return 12
 	end
 	return 9
 end
-
+ 
 function GetSpawnCol(HerbID)
     if HerbID == 4 or HerbID == 6 or HerbID == 7 or HerbID == 8 or HerbID == 11 or HerbID == 12 or HerbID == 13 or HerbID == 15 or HerbID == 18 or HerbID == 19 or HerbID == 20 or HerbID == 23 or HerbID == 26 or HerbID == 27 or HerbID == 28 or HerbID == 29 or HerbID == 31 or HerbID == 34 or HerbID == 38 or HerbID == 39 or HerbID == 40 or HerbID == 41 or HerbID == 43     or HerbID == 61 or HerbID == 62 then
         return 0
@@ -1233,7 +1233,7 @@ function GetSpawnCol(HerbID)
         return -1
     end
 end
-
+ 
 function GetVariantMax(HerbID)
     if HerbID == 43 then
         return 4
@@ -1254,7 +1254,7 @@ function GetMinCol(HerbID)
         return 0
     end
 end
-
+ 
 function GetMaxCol(HerbID)
     if HerbID == 2 or HerbID == 3 or HerbID == 1 or HerbID == 9 or HerbID == 10 or HerbID == 14 or HerbID == 17 or HerbID == 21 or HerbID == 22 or HerbID == 24 or HerbID == 25 or HerbID == 30 or HerbID == 32 or HerbID == 35 or HerbID == 36 or HerbID == 37 or HerbID == 44 or HerbID == 45 or HerbID == 46 or HerbID == 47 or HerbID == 48 or HerbID == 49 or HerbID == 50 or HerbID == 51 or HerbID == 52 or HerbID == 53 or HerbID == 33 or HerbID == 16 or HerbID == 5
 		 or HerbID == 54  or HerbID == 55  or HerbID == 56  or HerbID == 57  or HerbID == 58  or HerbID == 59  or HerbID == 60 then
@@ -1393,7 +1393,7 @@ function GetHerbIDFromLootedModel(Model)
         return 59
 	elseif Model == -1327505904 then
         return 60
-
+ 
 	elseif Model == 428150654 then
         return 61
 	
@@ -1401,16 +1401,7 @@ function GetHerbIDFromLootedModel(Model)
         return 0
     end
 end
-
-function GetHerbPicupAmountID(HerbID)
-	local data = Config.Composites[HerbID]
-	if data and data.pickupAmount then
-		return data.pickupAmount
-	else
-		return 1
-	end
-end
-
+ 
 function RequestAndWaitForComposite(compositeHash)
     Citizen.InvokeNative(0x73F0D0327BFA0812, compositeHash)  -- request COMPOSITE
 	
@@ -1421,58 +1412,44 @@ function RequestAndWaitForComposite(compositeHash)
     end
     return Citizen.InvokeNative(0x5E5D96BE25E9DF68, compositeHash)
 end
-
+ 
 function AreCompositeLootableEntityDefAssetsLoaded(compositeHash)
 	return Citizen.InvokeNative(0x5E5D96BE25E9DF68, compositeHash)
 end
-
+ 
 function RequestHerbCompositeAsset(compositeHash)
 	return Citizen.InvokeNative(0x73F0D0327BFA0812, asset, Citizen.ResultAsInteger())
 end
-
+ 
 function NativeDisplayCompositePickuptThisFrame(composite, display)
     Citizen.InvokeNative(0x40D72189F46D2E15, composite, display)
 	--TriggerServerEvent('rsg-composite:server:Gathered')
 end
-
+ 
 function EagleEyeSetCustomEntityTint(entity, red, green, blue)
 	return Citizen.InvokeNative(0x62ED71E133B6C9F1, entity, red, green, blue)
 end
-
+ 
 function AddVegModifierSphere(coords, radius, modType, flags, p6)
     return Citizen.InvokeNative(0xFA50F79257745E74, coords, radius, modType, flags, p6)
 end
-
+ 
 function RemoveVegModifierSphere(vegModifierHandle, p1)
 	Citizen.InvokeNative(0x9CF1836C03FB67A2, Citizen.PointerValueIntInitialized(vegModifierHandle), p1)
 end
-
+ 
 function NativeDeleteComposite(compositeId)
     Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, false)
 end
-
+ 
 function DumpTable(tbl)
     for k, v in pairs(tbl) do
         print(k, v)
     end
 end
-
---При перезагрузке очищает все что вносили в таблицу
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-		playerSpawn = false
-		ResetComposites()
-	end
-)
-
-AddEventHandler('onResourceStart', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-	if LocalPlayer.state.isLoggedIn then 
-		playerSpawn = true
-	end
-end)
-
-
+ 
+-- Очистка композитов. Вызывается из client.lua: при RSGCore:Client:OnPlayerUnload
+-- и при onResourceStop (там же обрабатываются и остальные lifecycle-события ресурса).
 function ResetComposites()
 	for key, value in pairs(Composite) do
 		deleteComposite(key, value.CompositeId, value.VegModifierHandle, value.Entitys)
@@ -1484,7 +1461,7 @@ function ResetComposites()
 		if scenarioId and scenarioId ~= 0 and DoesScenarioPointExist(scenarioId) then
 			SetScenarioPointActive(scenarioId, true)
 		end
-
+ 
 		Config.FullLootedScenarioPoint[key] = nil
 	end
 	ClearPedTasksImmediately(PlayerPedId(), true, true)
@@ -1498,29 +1475,16 @@ function ResetComposites()
 	RegisteredEagleEyeEntities = {}
 	Composite = {}
 end
-
+ 
 RegisterNetEvent("rsg-composite:client:GetServerComposite")
 AddEventHandler("rsg-composite:client:GetServerComposite", function(key, compositeTable)
 	StartCreateComposite(compositeTable.HerbID, compositeTable.CompositeHash, compositeTable.PointCoords, compositeTable.PointHeading, compositeTable.PackedSlots)
 end)
-
-
-
-RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
-	Wait(1000)
-	playerSpawn = true
-end)
-
-RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
-    playerSpawn = false
-	ResetComposites()
-end)
-
-
+ 
 function KeyFromCoords(vec)
     return string.format("%.3f:%.3f", vec.x, vec.y)
 end
-
+ 
 --[[
 function GetHerbCompositeNumEntities(compositeId, searchNum)
 	local struct = DataView.ArrayBuffer(256)
@@ -1542,10 +1506,10 @@ function GetHerbCompositeNumEntities(compositeId, searchNum)
         end
     end
 	PrintDebug("Entities2 = " .. json.encode(Entities2))
-
+ 
 	return Entitys
 end
-
+ 
 function GetHerbCompositeNumEntities2(herbCoords, scale)
 	local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
 	--local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, herbCoords.x, herbCoords.y, herbCoords.z, 0.0, 0.0, 0.0, scale, scale, scale)
@@ -1569,7 +1533,7 @@ function GetHerbCompositeNumEntities2(herbCoords, scale)
 	end
 	return foundEntities
 end
-
+ 
 function GetHerbCompositeNumEntities3(scale)
 	local playerPosition = GetEntityCoords(PlayerPedId())
 	local volumeArea = Citizen.InvokeNative(0xB3FB80A32BAE3065, playerPosition.x, playerPosition.y, playerPosition.z, 0.0, 0.0, 0.0, scale, scale, scale) -- _CREATE_VOLUME_SPHERE
@@ -1595,7 +1559,7 @@ function GetHerbCompositeNumEntities3(scale)
 	return foundEntities
 end
 --]]
-
+ 
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
 --------------------------------------------------------------------------------
@@ -1607,7 +1571,7 @@ AddEventHandler('rsg-composite:client:UIFeedPostSampleToastRight', function(text
 		exports["rsg-composite"]:showAdvancedRightNotification(text, _dict, _icon, text_color or nil, duration or 2000, quality or 0, pick or 1)
 	end
 end)
-
+ 
 function LoadTexture(dict)
 	if DoesStreamedTextureDictExist(dict) then
 		if not HasStreamedTextureDictLoaded(dict) then
@@ -1627,3 +1591,4 @@ end
 --------------------------------------------------------------------------------
 -------------------------------------NOTIFY-------------------------------------
 --------------------------------------------------------------------------------
+ 
