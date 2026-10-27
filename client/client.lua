@@ -196,7 +196,7 @@ CreateThread(function()
 							if HandleTreeEggLootComplete then
 								HandleTreeEggLootComplete(ped, lootedEntity, targetModel, lootSuccess)
 							end
-							if eventLoot.PlCoords and eventLoot.Model then
+							if eventLoot.PlCoords and eventLoot.Model then --lootSuccess тут нельзя использовать иначе некоторые растения не подбираются
 								local pickupCoords = eventLoot.PlCoords
 								local lootedModel = eventLoot.Model
 								local isPickup = not eventLoot.Eat

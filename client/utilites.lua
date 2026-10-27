@@ -1095,49 +1095,88 @@ function ChangePlayerStats(health, stamina, stress, hunger, thirst, clean)
 	local player = PlayerPedId()
  
 	SetPlayerHealth(health)
+	SetPlayerStamina(stamina)
  
-	if stamina ~= 0 then
-		ChangePedStamina(player, stamina)
-	end
 	if stress ~= 0 then
 		TriggerEvent('hud:client:UpdateStress', LocalPlayer.state.stress + stress)
-		--TriggerEvent(stress > 0 and 'hud:client:GainStress' or 'hud:client:RelieveStress', math.abs(stress))
 	end
 	if hunger ~= 0 then
 		TriggerEvent('hud:client:UpdateHunger', LocalPlayer.state.hunger + hunger)
-		--TriggerServerEvent("RSGCore:Server:SetMetaData", "hunger", RSGCore.Functions.GetPlayerData().metadata["hunger"] + hunger)
 	end
 	if thirst ~= 0 then
 		TriggerEvent('hud:client:UpdateThirst', LocalPlayer.state.thirst + thirst)
-		--TriggerServerEvent("RSGCore:Server:SetMetaData", "thirst", RSGCore.Functions.GetPlayerData().metadata["thirst"] + thirst)
 	end
 	if clean ~= 0 then
 		TriggerEvent('hud:client:UpdateCleanliness', LocalPlayer.state.cleanliness + clean)
-		--TriggerServerEvent("RSGCore:Server:SetMetaData", "cleanliness", RSGCore.Functions.GetPlayerData().metadata["cleanliness"] + clean)
 	end
 end
- 
---в общем 600
+
+local GET_CORE, SET_CORE, CHANGE_HEALTH, CHANGE_STAMINA = 0x36731AC041289BB1, 0xC6258F41D86676E0, 0x835F131E7DC8F97A, 0xC3D4B754C0E86B9E
+
 function SetPlayerHealth(health)
-	local player = PlayerPedId()
-	local currentHealth = GetEntityHealth(player)
-	local ostatok = health
-	if health > 0 then --если добавляем жизней
-		--если ядро не полное - вначале заполняем ядро
-		local healthCore = Citizen.InvokeNative(0x36731AC041289BB1, PlayerPedId(), 0, Citizen.ResultAsInteger()) --если ядро не полное то восполняем вначале ядро
-		if healthCore < 100 then
-			local currentNeedCore = 100 - healthCore --сколько добавить чтобы ядро наполнилось
-			ostatok = ostatok - currentNeedCore --получили остаток от того что пришло
-			Citizen.InvokeNative(0xC6258F41D86676E0, player, 0, math.floor(healthCore + currentNeedCore)) --заполнили ядро			
-		end
-	elseif health < 0 then --если убавляем
-		if currentHealth <= math.abs(health) then
-			ostatok = currentHealth * -1
-		end		
-	end
-	SetEntityHealth(player, math.floor(currentHealth + ostatok)) --остаток направляем в полоску(можно превышать)
+    local player = PlayerPedId()
+    if not health or health == 0 or not DoesEntityExist(player) or IsEntityDead(player) then return end
+
+    local rest = health
+
+    if rest > 0 then
+        local core = Citizen.InvokeNative(GET_CORE, player, 0, Citizen.ResultAsInteger()) -- _GET_ATTRIBUTE_CORE_VALUE
+
+        if core < 100 then
+            local addCore = math.min(rest, 100 - core)
+            local newCore = math.min(100, math.ceil(core + addCore))
+
+            Citizen.InvokeNative(SET_CORE, player, 0, newCore) -- _SET_ATTRIBUTE_CORE_VALUE
+
+            rest = rest - addCore
+        end
+    end
+
+    if rest ~= 0 then
+        -- Положительное значение: остаток лечения.
+        -- Отрицательное значение: урон.
+        Citizen.InvokeNative(CHANGE_HEALTH, player, rest + 0.0, 0, 0) -- _CHANGE_ENTITY_HEALTH
+    end
 end
- 
+
+function SetPlayerStamina(stamina)
+    local ped = PlayerPedId()
+    if not stamina or stamina == 0 or not DoesEntityExist(ped) or IsEntityDead(ped) then return end
+
+    local core = Citizen.InvokeNative(GET_CORE, ped, 1, Citizen.ResultAsInteger()) --_GET_ATTRIBUTE_CORE_VALUE
+
+    if stamina > 0 then
+        -- Сначала добиваем core до 100, остаток уходит в круг
+        local toCore = math.max(0, math.min(stamina, 100 - core))
+        if toCore > 0 then
+			-- Core принимает целое число: округляем вверх, ограничиваем 100.
+			Citizen.InvokeNative(SET_CORE, ped, 1, math.min(100, math.ceil(core + toCore))) --_SET_ATTRIBUTE_CORE_VALUE
+		end
+        if stamina > toCore then
+			-- Остаток восстановления направляем в круг.
+            -- + 0.0 преобразует аргумент в float для native.
+			Citizen.InvokeNative(CHANGE_STAMINA, ped, stamina - toCore + 0.0) --_CHANGE_PED_STAMINA
+		end
+    else
+        -- Сначала списываем из круга, остаток из core
+        local cost     = -stamina
+		-- Из круга снимаем не больше его текущего запаса.
+        local fromRing = math.min(cost, math.max(0.0, GetPlayerStamina(PlayerId())))
+        -- Всё, чего не хватило в круге, списываем из core.
+        -- Например: расход 20, круг 7 → из core нужно снять 13.
+		local fromCore = cost - fromRing
+        if fromRing > 0 then
+			-- Native передаём только расход из круга, в формате float.
+			Citizen.InvokeNative(CHANGE_STAMINA, ped, -fromRing + 0.0) --_CHANGE_PED_STAMINA
+		end
+        if fromCore > 0 then
+			-- После изменения круга явно устанавливаем рассчитанный core.
+            -- Округляем вверх и не допускаем значения ниже 0.
+			Citizen.InvokeNative(SET_CORE, ped, 1, math.max(0, math.ceil(core - fromCore))) --_SET_ATTRIBUTE_CORE_VALUE
+		end
+    end
+end
+
 --анимация рвоты
 function PlayAnimScenesVomit()
 	local player = PlayerPedId()
