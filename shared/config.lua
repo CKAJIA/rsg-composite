@@ -93,6 +93,8 @@ Config.composite_scenario = {
 	[-344807332] = {herbHesh = "COMPOSITE_LOOTABLE_WISTERIA_DEF", HerbID = 53},					--Глициния
 	[-1747066226] = {herbHesh = "COMPOSITE_LOOTABLE_YARROW_DEF", HerbID = 43},					--Тысячелистник
 	
+	[2059274664] = {herbHesh = "COMPOSITE_LOOTABLE_BURDOCK_ROOT_DEF", HerbID = 63},				--Корень лопуха(одиночный)
+
 	--  -- ???????	["LOOTABLE_COMPOSITE_ENTITY_DEF"] -- 0x875F0853
 }
 
@@ -592,6 +594,14 @@ Config.Composites = {
 		herbNameHash = `COMPOSITE_LOOTABLE_SALTBUSH_DEF`,
         spawn = { minCol = 2, maxCol = 3 },
 		eat = { isPoison = true },
+    },
+	
+	[63] = { --Корень лопуха(одиночный)
+        item = "consumable_herb_burdock_root",
+		herbNameHash = `HERB_BURDOCK_ROOT`,
+        spawn = { minCol = 1, maxCol = 1 },
+		pickupAmount = 1,
+        eat = { isPoison = false },
     },
     -- Яйца из древесных гнёзд. Здесь настраиваются предметы, дополнительные
     -- награды, опыт и использование так же, как для остальных композитов.

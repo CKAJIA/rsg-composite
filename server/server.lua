@@ -59,7 +59,7 @@ local function GetHerbPicupAmountID(HerbID)
 end
  
 function GetDictTexture(herbID)
-    if herbID >= 1 and herbID <= 43 or herbID == 61 or herbID >= 54 and herbID <= 56 then
+    if herbID >= 1 and herbID <= 43 or herbID == 61 or herbID >= 54 and herbID <= 56 or herbID == 63 then
         return "inventory_items"
     elseif herbID >= 44 and herbID <= 53 or herbID >= 57 and herbID <= 60 then
         return "inventory_items_mp"

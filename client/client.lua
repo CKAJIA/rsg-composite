@@ -196,14 +196,15 @@ CreateThread(function()
 							if HandleTreeEggLootComplete then
 								HandleTreeEggLootComplete(ped, lootedEntity, targetModel, lootSuccess)
 							end
-							if eventLoot.PlCoords and eventLoot.Model then --lootSuccess тут нельзя использовать иначе некоторые растения не подбираются
+							print("lootSuccess = " .. tostring(lootSuccess), "eventLoot.Model = " .. tostring(eventLoot.Model))
+							if eventLoot.PlCoords and eventLoot.Model then --lootSuccess дальше в функции проверка чтобы сделать исключение для Цветка ванили
 								local pickupCoords = eventLoot.PlCoords
 								local lootedModel = eventLoot.Model
 								local isPickup = not eventLoot.Eat
 								
 								if IsValidHerbModel(lootedModel) then
 									CreateThread(function()
-										FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
+										FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup, lootSuccess)
 									end)
 								end
 							end

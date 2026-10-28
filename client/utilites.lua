@@ -243,23 +243,35 @@ end
  
 -- Функция для спауна композитных объектов
 function spawnCompositeEntities(compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
-    for index = 1, #packedSlots do
-        if packedSlots[index] ~= nil then
-            if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then
-                PrintDebug(("Composite cap reached (%d/%d); skipped remaining slots for HerbID %s"):format(spawnCompositeNum, MAX_SPAWN_COMPOSITE, HerbID))
-                break
-            end
-            if not RequestAndWaitForComposite(compositeHash) then
-                PrintDebug(("Composite asset did not load: %s"):format(tostring(compositeHash)))
-                break
-            end
-            local compositeId, vegModifierHandle = CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
-            if compositeId and compositeId > 0 then
-                Composite[pointCoords.xy].CompositeId[index] = compositeId
-                Composite[pointCoords.xy].VegModifierHandle[index] = vegModifierHandle
-                Composite[pointCoords.xy].PointSpawn = true
+    local record = Composite[pointCoords.xy]
+    if not record or record.Spawning then return end
+    record.Spawning = true
+
+    -- Загрузка ассета делает Wait: повторный вызов не должен создавать второй
+    -- объект в том же слоте и перезаписывать единственный сохранённый handle.
+	-- xpcall - перехватывает ошибки спавна, чтобы после них сбросить флаг Spawning
+	-- и не заблокировать повторный спавн точки. debug.traceback покажет место ошибки.
+    local ok, err = xpcall(function() --для безопасного вызова чтобы в случае ошибки выполнение не прервалось с ошибкой
+        for index = 1, #packedSlots do
+            local existingId = record.CompositeId[index]
+            if packedSlots[index] ~= nil and (not existingId or existingId <= 0) then
+                if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then
+                    PrintDebug(("Composite cap reached (%d/%d); skipped remaining slots for HerbID %s"):format(spawnCompositeNum, MAX_SPAWN_COMPOSITE, HerbID))
+                    break
+                end
+                if not RequestAndWaitForComposite(compositeHash) then
+                    PrintDebug(("Composite asset did not load: %s"):format(tostring(compositeHash)))
+                    break
+                end
+                if Composite[pointCoords.xy] ~= record then return end
+                CreateComposite(index, compositeHash, herbCoords, sHeading, HerbID, packedSlots, pointCoords)
             end
         end
+    end, debug.traceback)
+    record.Spawning = false
+    if not ok then
+        print(("[rsg-composite] Spawn setup failed | HerbID=%s | point=%s | %s"):format(
+            tostring(HerbID), tostring(pointCoords.xy), tostring(err)))
     end
 end
  
@@ -342,7 +354,7 @@ function GeneratePackedCompositeSlots(spawnCol, minSlots, maxSlots, variantMax)
         end
 		
 		if rotationPool[index] == 0 then
-            offset = 0			
+            offset = 0
         else
             offset = offsetPool[math.random(1, 3)]
         end
@@ -471,78 +483,73 @@ function GetRotationOffset(slotIndex, packedSlots)
 end
  
 function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, packedSlots, pointCoords)
-    local compositeId = 0
-	local vegModifierHandle = 0
-	if index <= 4 then		
-        if not isVectorEmpty(herbCoords[index]) then
-			if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then return 0, 0 end
-            
-			local onGround = 0
-			local treeOrchidOffset = TREE_ORCHID_OFFSETS[HerbID]
-			if treeOrchidOffset then
-				onGround = 2
-				local offsetHeading = correctHeading(Heading)
-				herbCoords[index] = herbCoords[index] + correctCoords(treeOrchidOffset, offsetHeading)
-			end
-			if packedSlots[index] ~= nil and (packedSlots[index] & 4096) ~= 0 then
-				onGround = onGround | 1
-			end
-			-- Tree orchids must keep the scenario heading: rotating them can push the
-			-- model into the trunk. The original loop is zero-based; Lua slot 1 maps to 0.
-			local compositeHeading = correctHeading(Heading)
-			if not treeOrchidOffset then
-				compositeHeading = correctHeading(Heading + ((index - 1) * math.random(0, 90)))
-			end
-			
-			compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, compositeHeading, onGround, -1)
-			
-			PrintDebug(("Spawn try | compositeId=%s | spawnCompositeNum=%s | herbCoords=vec3(%.2f, %.2f, %.2f) | slot=%s"):format(
-					tostring(compositeId),
-					tostring(spawnCompositeNum),
-					herbCoords[index].x, herbCoords[index].y, herbCoords[index].z,
-					tostring(index)
-				))
- 
-			--если глючный composite - то удаляем его сразу(обычно начинает если уже больше 180 заспавнено.)
-			if not compositeId or compositeId <= 0 then
-				print(("ERROR: composite create failed | id=%s | herbID=%s | hash=%s | active=%s/%s | herbCoords=vec3(%.2f, %.2f, %.2f)"):format(
-					tostring(compositeId), tostring(HerbID), tostring(compositeHash),
-					tostring(spawnCompositeNum), tostring(MAX_SPAWN_COMPOSITE), 
-					herbCoords[index].x, herbCoords[index].y, herbCoords[index].z
-				))
-				return -1, 0
-			else
-				--получаем все Entitys у композита чтобы потом его можно было найти в ивенте
-				--print(compositeId, json.encode(GetHerbCompositeNumEntities(compositeId, 25)))
-				
-				--print(compositeId, json.encode(GetHerbCompositeNumEntities2(herbCoords[index], 10.0)))
-			
-				if HerbID == 61 then --для лука
-					vegModifierHandle = AddVegModifierSphere(herbCoords[index], 0.35, 2, 314, 0)
-				end
-				if isMushroom(HerbID) then --для грибов
-					vegModifierHandle = AddVegModifierSphere(herbCoords[index], 0.37, 4, 27, 0)
-				end
-				if HerbID == 38 then --Фиолетовый подснежник
-					vegModifierHandle = AddVegModifierSphere(herbCoords[index], 0.15, 4, -1, 0)
-				end			
-				if index == 1 then
-					if isEggs(HerbID) then --для яиц
-						vegModifierHandle = AddVegModifierSphere(herbCoords[index], 0.75, 1, 511, 0)
-					end
-					RareHerbs(HerbID, herbCoords[index], pointCoords)
-					SPHerbs(HerbID, herbCoords[index], pointCoords)
-					local spawnConfig = Config.Composites[HerbID].spawn
-					if isEggs(HerbID) or (spawnConfig and spawnConfig.isUnique) then
-						local tint = spawnConfig and spawnConfig.eagleEyeTint or Config.EagleEyeTint or {r = 255.0, g = 255.0, b = 0.0}
-						RegisterCompositeEagleEye(pointCoords.xy, Composite[pointCoords.xy].AttachEntity, tint)
-					end
-				end
-				spawnCompositeNum = spawnCompositeNum + 1
-				return compositeId, vegModifierHandle
-			end
-        end
-    end
+	local record = Composite[pointCoords.xy]
+	if not record or index > 4 or isVectorEmpty(herbCoords[index]) then return end
+	if spawnCompositeNum >= MAX_SPAWN_COMPOSITE then return end
+
+	local onGround = 0
+	local treeOrchidOffset = TREE_ORCHID_OFFSETS[HerbID]
+	if treeOrchidOffset then
+		onGround = 2
+		local offsetHeading = correctHeading(Heading)
+		herbCoords[index] = herbCoords[index] + correctCoords(treeOrchidOffset, offsetHeading)
+	end
+	if packedSlots[index] ~= nil and (packedSlots[index] & 4096) ~= 0 then
+		onGround = onGround | 1
+	end
+	-- Tree orchids must keep the scenario heading: rotating them can push the
+	-- model into the trunk. The original loop is zero-based; Lua slot 1 maps to 0.
+	local compositeHeading = correctHeading(Heading)
+	if not treeOrchidOffset then
+		compositeHeading = correctHeading(Heading + ((index - 1) * math.random(0, 90)))
+	end
+
+	local compositeId = exports["rsg-composite"]:NativeCreateComposite(compositeHash, herbCoords[index].x, herbCoords[index].y, herbCoords[index].z, compositeHeading, onGround, -1)
+	--если глючный composite - то удаляем его сразу(обычно начинает если уже больше 180 заспавнено.)
+	if not compositeId or compositeId <= 0 then
+		print(("ERROR: composite create failed | id=%s | herbID=%s | hash=%s | active=%s/%s | herbCoords=vec3(%.2f, %.2f, %.2f)"):format(
+			tostring(compositeId), tostring(HerbID), tostring(compositeHash),
+			tostring(spawnCompositeNum), tostring(MAX_SPAWN_COMPOSITE),
+			herbCoords[index].x, herbCoords[index].y, herbCoords[index].z))
+		return
+	end
+	if Composite[pointCoords.xy] ~= record then
+		NativeDeleteComposite(compositeId)
+		return
+	end
+
+	-- Всё состояние слота записывается здесь, до настройки промптов/подсветки.
+	-- Если настройка завершится ошибкой, деспаун найдёт созданный объект.
+	record.CompositeId[index] = compositeId
+	record.VegModifierHandle[index] = 0
+	record.PointSpawn = true
+	spawnCompositeNum = spawnCompositeNum + 1
+	PrintDebug(("[Composite] TRACKED HerbID=%s slot=%s id=%s point=%s"):format(
+		tostring(HerbID), tostring(index), tostring(compositeId), tostring(pointCoords.xy)))
+		
+	--получаем все Entitys у композита чтобы потом его можно было найти в ивенте
+	--print(compositeId, json.encode(GetHerbCompositeNumEntities(compositeId, 25)))
+	
+	--print(compositeId, json.encode(GetHerbCompositeNumEntities2(herbCoords[index], 10.0)))
+
+	if HerbID == 61 then --для лука
+		record.VegModifierHandle[index] = AddVegModifierSphere(herbCoords[index], 0.35, 2, 314, 0)
+	elseif isMushroom(HerbID) then --для грибов
+		record.VegModifierHandle[index] = AddVegModifierSphere(herbCoords[index], 0.37, 4, 27, 0)
+	elseif HerbID == 38 then --Фиолетовый подснежник
+		record.VegModifierHandle[index] = AddVegModifierSphere(herbCoords[index], 0.15, 4, -1, 0)
+	elseif index == 1 and isEggs(HerbID) then --для яиц
+		record.VegModifierHandle[index] = AddVegModifierSphere(herbCoords[index], 0.75, 1, 511, 0)
+	end
+	if index == 1 then
+		RareHerbs(HerbID, herbCoords[index], pointCoords)
+		SPHerbs(HerbID, herbCoords[index], pointCoords)
+		local spawnConfig = Config.Composites[HerbID].spawn
+		if isEggs(HerbID) or (spawnConfig and spawnConfig.isUnique) then
+			local tint = spawnConfig and spawnConfig.eagleEyeTint or Config.EagleEyeTint or {r = 255.0, g = 255.0, b = 0.0}
+			RegisterCompositeEagleEye(pointCoords.xy, record.AttachEntity, tint)
+		end
+	end
 end
  
 --Despawn herbs
@@ -785,12 +792,13 @@ function SPHerbs(HerbID, herbCoords, pointCoords)
 					--BOOL IS_ENTITY_ATTACHED ( Entity entity )  //0xEE6AD63ABF59C0B7
 					if IsEntityAttached(entity) then
 						attachEntity = entity
+						break
 					end
 				end
 			elseif isSPHerbsOneEntities(HerbID) and foundEntities[1] then
 				attachEntity = foundEntities[1]
 			end
- 
+
 			if DoesEntityExist(attachEntity) then
 				Composite[pointCoords.xy].AttachEntity = attachEntity
 				Composite[pointCoords.xy].Entitys = foundEntities
@@ -863,7 +871,7 @@ end
  
 -- Пытается найти ближайший scenario/слот после лута и применить результат:
 -- выдача награды/поедание + очистка слота + отключение точки если пусто.
-function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
+function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup, lootSuccess)
     -- 1) Откуда искать: если на маунте, лучше искать от игрока
     local searchCoords = pickupCoords
 	local ped = PlayerPedId()
@@ -898,6 +906,12 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
         PrintDebug("ERROR: Composite record missing for point")
         return
     end
+
+    -- Цветок ванили собирается штатным промптом игры, который может сообщить false.
+    -- Исключение разрешено только для подбора найденной нашей Цветок ванили.
+    if lootSuccess == false then
+        if not (isPickup and HerbID == 37) then return end
+    end
 	
 	local nearestCompositeId = Composite[key].CompositeId[slotIndex]
  
@@ -915,7 +929,8 @@ function FindPicupCompositeAndCoords(pickupCoords, lootedModel, isPickup)
     if isPickup then
 		--мы собрали
         TriggerServerEvent("rsg-composite:server:Gathered", HerbID)
-		PrintDebug("Мы собрали: HerbID = " .. HerbID .. " compositeIndex = " .. slotIndex .. " nearestCompositeId = " .. nearestCompositeId)
+		PrintDebug("Мы собрали: HerbID = " .. tostring(HerbID) .. " compositeIndex = " .. tostring(slotIndex) .. " nearestCompositeId = " .. tostring(nearestCompositeId))
+		print("Мы собрали: HerbID = " .. tostring(HerbID) .. " compositeIndex = " .. tostring(slotIndex) .. " nearestCompositeId = " .. tostring(nearestCompositeId))
     else
 		--мы съели
         Eating(HerbID)
@@ -954,8 +969,11 @@ end
 function AreLootHerbIDsCompatible(modelHerbID, scenarioHerbID)
     if modelHerbID == scenarioHerbID then
         return true
+    end 
+	-- Обычный и одиночный лопух используют одну модель (она определяется как ID 7).
+    if (modelHerbID == 7 or modelHerbID == 63) and (scenarioHerbID == 7 or scenarioHerbID == 63) then
+        return true
     end
- 
     -- The same world model/scenario can represent randomized alligator clutches
     -- with IDs 54–56, so compatibility must work in either argument order.
     local modelIsAlligatorEgg = modelHerbID >= 54 and modelHerbID <= 56
@@ -984,7 +1002,8 @@ function GetNearestScenario(PickUpPlayerCoords, Model)
 			local comp = Composite[key]
 			if comp and AreLootHerbIDsCompatible(comp.HerbID, scenarioHerbID) and comp.HerbCoords then
 				for index, compositeCoords in ipairs(comp.HerbCoords) do
-					if not isVectorEmpty(compositeCoords) then
+					local compositeId = comp.CompositeId and comp.CompositeId[index]
+					if not isVectorEmpty(compositeCoords) and compositeId and compositeId ~= 0 then
 						local dist = #(pickupCoords - compositeCoords)
 						if dist < minDistance then
 							minDistance = dist
@@ -1266,7 +1285,7 @@ function GetSpawnCol(HerbID)
     elseif HerbID == 5 or HerbID == 16 or HerbID == 33 or HerbID == 42 then
         return 1
     elseif HerbID == 2 or HerbID == 3 or HerbID == 37 or HerbID == 1 or HerbID == 9 or HerbID == 10 or HerbID == 14 or HerbID == 17 or HerbID == 21 or HerbID == 22 or HerbID == 24 or HerbID == 25 or HerbID == 30 or HerbID == 32 or HerbID == 35 or HerbID == 36 or HerbID == 44 or HerbID == 45 or HerbID == 46 or HerbID == 47 or HerbID == 48 or HerbID == 49 or HerbID == 50 or HerbID == 51 or HerbID == 52 or HerbID == 53
-			 or HerbID == 54 or HerbID == 55 or HerbID == 56 or HerbID == 57 or HerbID == 58 or HerbID == 59 or HerbID == 60 then
+		 or HerbID == 63 or HerbID == 54 or HerbID == 55 or HerbID == 56 or HerbID == 57 or HerbID == 58 or HerbID == 59 or HerbID == 60 then
         return 3
     else
         return -1
