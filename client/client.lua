@@ -1,7 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
  
 playerSpawn = false
---local playerSpawn = false
 local SPAWN_RADIUS = 100.0--100.0
 local prePlayerPosition = nil
 local eventLoot = {PlCoords = nil, Model = nil, Eat = false}
@@ -30,6 +29,8 @@ end)
  
 RegisterNetEvent('RSGCore:Client:OnPlayerUnload', function()
     playerSpawn = false
+	prePlayerPosition = nil
+	eventLoot = {PlCoords = nil, Model = nil, Eat = false}
 	ResetComposites()
 	TreeEggsReset()
 	CrayfishReset()
@@ -37,14 +38,13 @@ end)
  
 function CreateScenarioPoints()
 	for index, herb in pairs(deleted_herbs) do
-		if not spawnedScenariopoint[index] then
+		if not spawnedScenariopoint[index] or not DoesScenarioPointExist(spawnedScenariopoint[index]) then
 			local newScenPoint = CreateScenarioPointHash(joaat(herb.hash), herb.point.x, herb.point.y, herb.point.z, herb.point.w, herb.radius, 0.0, true)--0.0 radius
-			spawnedScenariopoint[index] = newScenPoint
-			if DoesScenarioPointExist(newScenPoint) and IsScenarioPointActive(newScenPoint) then
-				--print("NewScenario = " .. newScenPoint)
-				--print("hash = " .. herb.hash)
+			if newScenPoint and newScenPoint ~= 0 and DoesScenarioPointExist(newScenPoint) then
+				spawnedScenariopoint[index] = newScenPoint
 			else
-				print("No scenario [" .. index .. "] index")				
+				spawnedScenariopoint[index] = nil
+				print("[CreateScenarioPoints()] No scenario [" .. index .. "] index")
 			end
 		end
 	end
@@ -102,12 +102,8 @@ function startPointCheck()
 	--void NETWORK_SET_SCRIPT_IS_SAFE_FOR_NETWORK_GAME ()  //0x3D0EAC6385DD6100
 	Citizen.InvokeNative(0x3D0EAC6385DD6100)
 	CreateScenarioPoints()
-	--while not playerSpawn do -- Ждать, пока игрок не заспавнится
-	--	Wait(1000)
-	--end
  
 	CreateThread(function()
-		Wait(1)
 		while playerSpawn do
 			Wait(2000) -- 2 sec
 			local playerPosition = GetEntityCoords(PlayerPedId())
@@ -118,25 +114,36 @@ function startPointCheck()
 				checkRecordAndClear(playerPosition)																																 
 				local scenarios = getLootScenarioHash(playerPosition, SPAWN_RADIUS, 600)
 				for _, scenarioData in ipairs(scenarios) do
-					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
-					local pointHeading = GetScenarioPointHeading(scenarioData.scenario, true)
-					local herbID, herbHash
-					if isEggs(scenarioData.herbsScenarioPoint.HerbID) then
-						herbID, herbHash = ResolveEggScenario(scenarioData)
+					local scenario = scenarioData.scenario
+					local pointCoords = GetScenarioPointCoords(scenario, true)
+					local key = KeyFromCoords(pointCoords)
+				
+					if Config.FullLootedScenarioPoint[key] then
+						-- Сохраняем актуальный ID только на клиенте для последующей очистки.
+						Config.FullLootedScenarioPoint[key] = scenario
+						SetScenarioPointActive(scenario, false)
 					else
-						herbID = scenarioData.herbsScenarioPoint.HerbID
-						herbHash = scenarioData.herbsScenarioPoint.herbHesh
+						local pointHeading = GetScenarioPointHeading(scenario, true)
+						local herbID, herbHash
+				
+						if isEggs(scenarioData.herbsScenarioPoint.HerbID) then
+							herbID, herbHash = ResolveEggScenario(scenarioData)
+						else
+							herbID = scenarioData.herbsScenarioPoint.HerbID
+							herbHash = scenarioData.herbsScenarioPoint.herbHesh
+						end
+				
+						CreateServerComposite(herbID, herbHash, pointCoords, pointHeading)
 					end
-					CreateServerComposite(herbID, herbHash, pointCoords, pointHeading)
 				end
-			prePlayerPosition = playerPosition
-			end			
+				prePlayerPosition = playerPosition
+			end
 		end
 	end)
 end
  
 function PlayerMovedTooFar(currentPos, prevPos, radius)
-	if not prePlayerPosition then return true end --защита от нулевого вектора.
+	if not prevPos then return true end --защита от нулевого вектора.
     local dist = #(currentPos - prevPos)  -- вычисляем расстояние между текущей и предыдущей позициями
     return dist > radius  -- возвращаем true, если расстояние больше заданного радиуса, иначе false
 end
@@ -276,8 +283,8 @@ CreateThread(function()
 										
 										--если точка полностью собрана - отсылаем в БД
 										if state.exhausted then
-											Config.FullLootedScenarioPoint[state.key] = 0									
-											TriggerServerEvent('rsg-composite:server:SaveGatheredPoint', state.key,	0)
+											Config.FullLootedScenarioPoint[state.key] = true									
+											TriggerServerEvent('rsg-composite:server:SaveGatheredPoint', state.key)
 										end
 									
 										state.pending = false

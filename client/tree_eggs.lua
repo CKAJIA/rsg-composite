@@ -285,11 +285,7 @@ local function scanTreeNests()
     end
 
     local playerCoords = GetEntityCoords(ped)
-    local foundCount = GetScenarioPointsInArea(
-        playerCoords.x, playerCoords.y, playerCoords.z,
-        Config.TreeEggs.scanRadius or 100.0,
-        scenarioBuffer:Buffer(), maxScenarioPoints
-    ) or 0
+    local foundCount = GetScenarioPointsInArea(playerCoords.x, playerCoords.y, playerCoords.z, Config.TreeEggs.scanRadius or 100.0, scenarioBuffer:Buffer(), maxScenarioPoints) or 0
     local count = math.min(foundCount, maxScenarioPoints)
 
     for i = 1, count, 1 do
@@ -301,14 +297,15 @@ local function scanTreeNests()
                 local coords = GetScenarioPointCoords(scenarioId, true)
                 local pointKey = KeyFromCoords(coords)
                 if Config.FullLootedScenarioPoint[pointKey] then
-                    if IsScenarioPointActive(scenarioId) then
-                        SetScenarioPointActive(scenarioId, false)
-                    end
-                elseif not pendingTreeEggPoints[pointKey] then
-					if #(coords - playerCoords) <= (Config.TreeEggs.scanRadius or 100.0) then
-						createTreeNest(scenarioId, speciesKey, coords)
+					-- ID получен текущим поиском, а не загружен из БД.
+					Config.FullLootedScenarioPoint[pointKey] = scenarioId
+				
+					if IsScenarioPointActive(scenarioId) then
+						SetScenarioPointActive(scenarioId, false)
 					end
-                end
+				elseif not pendingTreeEggPoints[pointKey] then
+					createTreeNest(scenarioId, speciesKey, coords)
+				end
             end
         end
     end
@@ -355,6 +352,7 @@ function TreeEggsReset()
 		for scenarioId in pairs(activeTreeNests) do
 			RemoveTreeNest(scenarioId)
 		end
+		activeTreeNests = {}
 	end
 end
 

@@ -1,7 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
  
 local ServerComposite = {}
-local CompositeLoaded = false
  
 -- Антиспам для rsg-composite:server:Gathered / Eating.
 -- Клиент может вызвать оба события напрямую, с любым HerbID/amount,
@@ -27,7 +26,6 @@ local function EnsureCompositesTable()
             id INT NOT NULL AUTO_INCREMENT,
             citizenid VARCHAR(50) NOT NULL,
             pointkey VARCHAR(32) NOT NULL,
-            scenario BIGINT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY uniq_citizen_point (citizenid, pointkey),
@@ -107,12 +105,8 @@ local function GiveCompositeReward(source, Player, HerbID, amount)
 		print(('[rsg-composite] Предмет отсутствует в Shared.Items: %s'):format(tostring(item)))
 		return false
 	end
-	if not Player.Functions.AddItem(item, amount) then
-		--ничего делать не надо- в самом инвентаре выдаст сообщение что ивнетарь переполнен
-		--и выкинет на землю
-		--TriggerClientEvent('ox_lib:notify', source, {title = 'Inventory full', description = item, type = 'error', duration = 3000})
-		--return false
-	end
+	-- Инвентарь сам обрабатывает случай, когда предмет не помещается.
+	Player.Functions.AddItem(item, amount)
  
 	local noticeString = amount > 1 and (amount .. 'x ') or ''
 	TriggerClientEvent('rsg-composite:client:UIFeedPostSampleToastRight', source,
@@ -207,15 +201,12 @@ end)
  
 RegisterNetEvent("rsg-composite:server:AddToServerPoint")
 AddEventHandler("rsg-composite:server:AddToServerPoint", function(key, CompositePoint)
-		local playerId = source -- Получаем ID игрока, отправившего запрос
-		if ServerComposite[key] == nil then
-			ServerComposite[key] = CompositePoint
-			--print("HerbCoords[1] = " .. CompositePoint.HerbID)
-		end
-		--local compositeTable = ServerComposite[key]
-		TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
-    end
-)
+	local playerId = source -- Получаем ID игрока, отправившего запрос
+	if ServerComposite[key] == nil then
+		ServerComposite[key] = CompositePoint
+	end
+	TriggerClientEvent("rsg-composite:client:GetServerComposite", playerId, key, ServerComposite[key]) -- Отправляем таблицу клиенту
+end)
 --[[
 RegisterServerEvent("rsg-composite:server:RequestCompositeFromClient")
 AddEventHandler("rsg-composite:server:RequestCompositeFromClient", function(key)
@@ -239,18 +230,18 @@ end)
  
  
  
- 
-RegisterServerEvent('rsg-composite:server:SaveGatheredPoint')
-AddEventHandler('rsg-composite:server:SaveGatheredPoint', function(pointkey, scenario)
+RegisterNetEvent('rsg-composite:server:SaveGatheredPoint', function(pointkey)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
-    local citizenid = Player.PlayerData.citizenid	
- 
-	MySQL.Async.execute('INSERT INTO player_composites (citizenid, pointkey, scenario) VALUES (@citizenid, @pointkey, @scenario) ON DUPLICATE KEY UPDATE scenario = VALUES(scenario)', {
-		['@citizenid'] = citizenid,
-		['@pointkey'] = pointkey,
-		['@scenario'] = scenario
-	})
+    if not Player then return end
+
+    MySQL.Async.execute(
+        'INSERT IGNORE INTO player_composites (citizenid, pointkey) VALUES (@citizenid, @pointkey)',
+        {
+            ['@citizenid'] = Player.PlayerData.citizenid,
+            ['@pointkey'] = pointkey
+        }
+    )
 end)
  
 local treeEggClaimsInProgress = {}
@@ -314,8 +305,8 @@ RegisterNetEvent('rsg-composite:server:GatherTreeEgg', function(pointkey, scenar
 	local ok, result = pcall(function()
 		-- The unique citizen/point key makes a pickup persistent and prevents duplicate rewards.
 		return MySQL.insert.await(
-			'INSERT IGNORE INTO player_composites (citizenid, pointkey, scenario) VALUES (?, ?, ?)',
-			{ Player.PlayerData.citizenid, pointkey, scenarioId }
+			'INSERT IGNORE INTO player_composites (citizenid, pointkey) VALUES (?, ?)',
+			{ Player.PlayerData.citizenid, pointkey }
 		)
 	end)
 	if not ok then
@@ -350,27 +341,20 @@ end)
  
 -- get plant
 RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
-	local playerId = source
-	local Player = RSGCore.Functions.GetPlayer(playerId)
-	local citizenid = Player.PlayerData.citizenid
-	local result = MySQL.query.await('SELECT pointkey, scenario FROM player_composites WHERE citizenid = @citizenid', { 
-		['@citizenid'] = citizenid 
-	})
- 
-	local FullLootedScenarioPoint = {}
-	if result[1] then
-		for i = 1, #result do
-			local key = result[i].pointkey
-			local scenario = result[i].scenario
- 
-			if key and scenario then
-				FullLootedScenarioPoint[key] = scenario
-			end
-		end
-	end
- 
-	PrintDebug("Composite Data for " .. citizenid .. " uploaded successfully")
- 
+    local Player = RSGCore.Functions.GetPlayer(source)
+    local citizenid = Player.PlayerData.citizenid
+
+    local result = MySQL.query.await('SELECT pointkey FROM player_composites WHERE citizenid = @citizenid', {
+		['@citizenid'] = citizenid }
+    )
+
+    local FullLootedScenarioPoint = {}
+
+    for _, row in ipairs(result) do
+        FullLootedScenarioPoint[row.pointkey] = true
+    end
+
+    PrintDebug("Composite Data for " .. citizenid .. " uploaded successfully")
     cb(FullLootedScenarioPoint)
 end)
  
@@ -440,7 +424,8 @@ end
  
 -- Запускаем планирование
 scheduleClearing()
- 
+
+--При остановке ресурса- очищаем таблицу. Это специально сделано.
 AddEventHandler('onResourceStop', function(resource)
     if GetCurrentResourceName() ~= resource then return end
     clearTableComposite()

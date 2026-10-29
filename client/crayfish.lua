@@ -108,13 +108,12 @@ local function CreateCrayfishAtHole(holeIndex)
 	SetModelAsNoLongerNeeded(crayFishModel)
 
     if not crayfish or crayfish == 0 then return end
+	state.crayfish = crayfish
 
     SetEntityAsMissionEntity(crayfish, true, true)
-    --PlaceObjectOnGroundProperly(crayfish)
 	
 	RegisterEntityForEagleEye(crayfish, Config.EagleEyeTint or {r = 255.0, g = 255.0, b = 0.0,})
 
-    state.crayfish = crayfish
 	PrintDebug("[crayfish] crayfish = " .. tostring(crayfish))
 end
 
@@ -233,18 +232,12 @@ function CrayfishCleanupAll()
 			DeleteCrayfishScenario(holeIndex)
 	
 			local pin = state.pin
-	
-			if pin and pin ~= 0 then
-				if Citizen.InvokeNative(0x1FF441D7954F8709, pin) then
-					Citizen.InvokeNative(
-						0xD2B9C78537ED5759,
-						pin
-					)
-				end
-			end
-	
+			if pin and pin ~= 0 and Citizen.InvokeNative(0x1FF441D7954F8709, pin) then
+				Citizen.InvokeNative(0xD2B9C78537ED5759, pin)
+			end	
 			state.pin = nil
 		end
+		activeHoles = {}
 	end
 end
 
@@ -297,12 +290,9 @@ end)
 -- Сброс состояния нор (без удаления пинов). Вызывается из client.lua
 -- при RSGCore:Client:OnPlayerUnload.
 function CrayfishReset()
-    for holeIndex in pairs(activeHoles) do
+    for holeIndex, state in pairs(activeHoles) do
         DeleteCrayfishAtHole(holeIndex)
         DeleteCrayfishScenario(holeIndex)
-    end
-
-    for _, state in pairs(activeHoles) do
         state.collected = 0
         state.pending = false
         state.exhausted = false
