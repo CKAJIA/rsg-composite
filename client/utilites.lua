@@ -674,7 +674,7 @@ CreateThread(function()
                                 equipKnife(HerbID)
 
                                 if record.PickupPrompt then
-                                    activeOrchid = { pointCoords = pointCoords, HerbID = HerbID }
+                                    ctiveOrchid = { pointCoords = pointCoords, HerbID = HerbID, key = key }
                                     foundOrchid = true
                                 end
                             end
@@ -722,8 +722,9 @@ CreateThread(function()
 
             -- activeOrchid мог устареть за секунду: игрок отошёл/телепортировался
             -- или точка была залутана. Проверяем актуальное состояние.
+			local key = orchid.key or KeyFromCoords(orchid.pointCoords.xy)
             local stillValid = prompt
-                and not Config.FullLootedScenarioPoint[orchid.key]
+                and not Config.FullLootedScenarioPoint[key]
                 and #(GetEntityCoords(PlayerPedId()).xy - orchid.pointCoords.xy) <= 2.0
 
             if stillValid then
