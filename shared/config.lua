@@ -1,6 +1,11 @@
 Config = Config or {}
 Config.FullLootedScenarioPoint = {}
+Config.DisabledCollectibleScenarioPoints = {} -- заполняется на сервере, клиент получает при запросе
 Config.Debug = false
+--Каждый раз при сборе при nil будет генерироваться таблица для спавна коллекционный цветов и яиц в разных местах
+--Для цветов и яиц генерируются разные таблицы
+Config.ForceCollectibleIndices = nil
+--Config.ForceCollectibleIndices = { flowers = 0, bird_eggs = 3 } -- или { flowers = 0, bird_eggs = 3 }(0мин - 5макс) или nil --задает фиксированые точки для спавна
 
 Config.EagleEyeTint = { r = 255.0, g = 255.0, b = 0.0 }
 

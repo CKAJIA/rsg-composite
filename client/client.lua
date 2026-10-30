@@ -15,8 +15,9 @@ local scenarioBuf = DataView.ArrayBuffer(SCENARIO_BUF_SIZE)
 -- (ResetComposites, TreeEggsReset, CrayfishReset, CrayfishCleanupAll),
 -- которые вызываются отсюда.
 local function LoadPlayerComposites()
-	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData)
+	RSGCore.Functions.TriggerCallback('rsg-composite:server:GetPlayerComposites', function(compositeData, disabledPoints)
 		Config.FullLootedScenarioPoint = compositeData
+		Config.DisabledCollectibleScenarioPoints = disabledPoints or {}
 		playerSpawn = true
 		startPointCheck()
 	end)
@@ -122,6 +123,9 @@ function startPointCheck()
 						-- Сохраняем актуальный ID только на клиенте для последующей очистки.
 						Config.FullLootedScenarioPoint[key] = scenario
 						SetScenarioPointActive(scenario, false)
+					elseif Config.DisabledCollectibleScenarioPoints[key] then
+						-- Точка запрещена текущим циклом: ничего не спавним.
+						-- Сценарий не отключаем, чтобы не пришлось возвращать его при сбросе.
 					else
 						local pointHeading = GetScenarioPointHeading(scenario, true)
 						local herbID, herbHash

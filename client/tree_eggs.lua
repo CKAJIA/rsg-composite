@@ -303,6 +303,8 @@ local function scanTreeNests()
 					if IsScenarioPointActive(scenarioId) then
 						SetScenarioPointActive(scenarioId, false)
 					end
+				elseif Config.DisabledCollectibleScenarioPoints[pointKey] then
+					-- Гнездо запрещено текущим циклом: не создаём.
 				elseif not pendingTreeEggPoints[pointKey] then
 					createTreeNest(scenarioId, speciesKey, coords)
 				end

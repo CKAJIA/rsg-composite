@@ -35,11 +35,6 @@ local function EnsureCompositesTable()
     MySQL.Async.execute(sql, {})
 end
  
-AddEventHandler('onResourceStart', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    EnsureCompositesTable()
-end)
- 
 -- Вставьте вместо него этот хелпер:
 local function GetCompositeData(herbID)
     return Config.Composites[herbID]
@@ -338,6 +333,75 @@ RegisterNetEvent('rsg-composite:server:GatherTreeEgg', function(pointkey, scenar
 	treeEggClaimsInProgress[claimKey] = nil
 	respond(true, 'gathered')
 end)
+
+
+
+
+
+-- Генерация таблицы запрещённых коллекционных точек (один раз при старте ресурса).
+-- Выбранные циклы нужны только для построения таблицы, клиенту они не передаются.
+
+-- Тот же формат ключа, что и KeyFromCoords на клиенте ("%.3f:%.3f").
+local function CollectibleKey(coords)
+    return string.format("%.3f:%.3f", coords.x, coords.y)
+end
+
+local function GenerateCollectibleIndices()
+	if Config.ForceCollectibleIndices then
+        return Config.ForceCollectibleIndices
+    end
+    return {
+        flowers = math.random(0, 5),
+        bird_eggs = math.random(0, 5),
+    }
+end
+
+local function BuildDisabledCollectiblePoints(indices)
+    local coordinates = collectibleCoordinates
+    if not coordinates then
+        print('[rsg-composite] collectibleCoordinates не загружена (проверь порядок в манифесте)')
+        return false
+    end
+
+    -- Шаг 1: ключи разрешённых точек (выбранный цикл каждого предмета).
+    local allowed = {}
+    for category, items in pairs(coordinates) do
+        local selectedIndex = indices[category]
+        for _, cycles in pairs(items) do
+            local positions = cycles[selectedIndex]
+            if positions then
+                for _, coords in ipairs(positions) do
+                    allowed[CollectibleKey(coords)] = true
+                end
+            end
+        end
+    end
+
+    -- Шаг 2: запрещаем остальные циклы, пропуская совпадения с разрешёнными.
+    local disabled, count = {}, 0
+    for category, items in pairs(coordinates) do
+        local selectedIndex = indices[category]
+        for _, cycles in pairs(items) do
+            for index, positions in pairs(cycles) do
+                if index ~= selectedIndex then
+                    for _, coords in ipairs(positions) do
+                        local key = CollectibleKey(coords)
+                        if not allowed[key] and not disabled[key] then
+                            disabled[key] = true
+                            count = count + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    Config.DisabledCollectibleScenarioPoints = disabled
+    PrintDebug(('Collectible indices: flowers=%s, bird_eggs=%s, disabled points=%d'):format(
+        indices.flowers, indices.bird_eggs, count))
+    return true
+end
+
  
 -- get plant
 RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
@@ -355,7 +419,8 @@ RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', fun
     end
 
     PrintDebug("Composite Data for " .. citizenid .. " uploaded successfully")
-    cb(FullLootedScenarioPoint)
+	-- Вторым параметром уходит таблица запрещённых коллекционных точек.
+    cb(FullLootedScenarioPoint, Config.DisabledCollectibleScenarioPoints)
 end)
  
  
@@ -395,6 +460,8 @@ CreateUseableItem()
 -- Функция для очистки таблицы
 local function clearTableComposite()
     MySQL.Async.execute('TRUNCATE TABLE player_composites')
+	-- Вместе с очисткой собранных точек обнуляем талицу запрета для коллекционых предметов.
+    Config.DisabledCollectibleScenarioPoints = {}
 end
  
 -- Планирование очистки таблицы в 6:00 утра каждый день
@@ -424,6 +491,13 @@ end
  
 -- Запускаем планирование
 scheduleClearing()
+
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    EnsureCompositesTable()
+	BuildDisabledCollectiblePoints(GenerateCollectibleIndices())
+end)
 
 --При остановке ресурса- очищаем таблицу. Это специально сделано.
 AddEventHandler('onResourceStop', function(resource)
