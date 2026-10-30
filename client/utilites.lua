@@ -648,14 +648,15 @@ CreateThread(function()
 		if playerSpawn then
 			local playerPosition = GetEntityCoords(PlayerPedId())
 			local scenarios = getLootScenarioHash(playerPosition, 25.0, 100)
+			local sleep = 1000
 			if scenarios and #scenarios > 0 then
 				for _, scenarioData in ipairs(scenarios) do
 					local HerbID = scenarioData.herbsScenarioPoint.HerbID
 					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
 					local key = KeyFromCoords(pointCoords.xy)
-					--print("pointCoords = " .. json.encode(pointCoords))
-					local distance = #(playerPosition.xy - pointCoords.xy)
-					local record = Composite[pointCoords.xy]						 
+					local coordsXY = pointCoords.xy
+					local distance = #(playerPosition.xy - coordsXY)
+					local record = Composite[coordsXY]						 
 					if record and not Config.FullLootedScenarioPoint[key] then
 						if isSPHerbs(HerbID) then
 							if distance <= 2.0 then
@@ -663,9 +664,12 @@ CreateThread(function()
 								--пока нет ножа то у некоторых орхидей нет промпт
 								equipKnife(HerbID)
 
-								local prompt = Composite[pointCoords.xy].PickupPrompt
+								local prompt = Composite[coordsXY].PickupPrompt
 								
 								PicUpOrchid(pointCoords, prompt, HerbID)
+								if prompt then
+									sleep = 100
+								end
 							end
 						end
 						--elseif isRareHerbs(HerbID) or isEggs(HerbID) then
@@ -674,12 +678,12 @@ CreateThread(function()
 							if distance <= 20.0 and not record.SoundId then
 								playSound(pointCoords)
 							elseif distance > 20.0 and record.SoundId then
-								DeleteSound(pointCoords.xy)
+								DeleteSound(coordsXY)
 							end					
 						end
 					--если точка залутана и есть запись со звуком - удаляем звук
 					elseif record and Config.FullLootedScenarioPoint[key] then
-						DeleteSound(pointCoords.xy)
+						DeleteSound(coordsXY)
 					end
 				end
 			end
@@ -689,7 +693,7 @@ CreateThread(function()
 					DeleteSound(pointCoords)
 				end
 			end
-			Wait(150)
+			Wait(sleep)
 		else
 			Wait(1000)
 		end
