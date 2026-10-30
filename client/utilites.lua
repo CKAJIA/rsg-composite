@@ -642,64 +642,103 @@ function RareHerbs(HerbID, HerbCoords, pointCoords)
 		end
 	end
 end
- 
+
+-- Орхидея рядом с игроком (обновляется раз в секунду основным циклом).
+-- Быстрый поток ниже опрашивает только её промпт.
+local activeOrchid = nil -- { pointCoords = vector3, HerbID = number }
+
 CreateThread(function()
     while true do
-		if playerSpawn then
-			local playerPosition = GetEntityCoords(PlayerPedId())
-			local scenarios = getLootScenarioHash(playerPosition, 25.0, 100)
-			local sleep = 1000
-			if scenarios and #scenarios > 0 then
-				for _, scenarioData in ipairs(scenarios) do
-					local HerbID = scenarioData.herbsScenarioPoint.HerbID
-					local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
-					local key = KeyFromCoords(pointCoords.xy)
-					local coordsXY = pointCoords.xy
-					local distance = #(playerPosition.xy - coordsXY)
-					local record = Composite[coordsXY]						 
-					if record and not Config.FullLootedScenarioPoint[key] then
-						if isSPHerbs(HerbID) then
-							if distance <= 2.0 then
-								--Если включена автоэкипировка ножа и у нас нет экипированого ножа- то нож экипируется
-								--пока нет ножа то у некоторых орхидей нет промпт
-								equipKnife(HerbID)
+        if playerSpawn then
+            local playerPosition = GetEntityCoords(PlayerPedId())
+            local scenarios = getLootScenarioHash(playerPosition, 25.0, 100)
+            local foundOrchid = false
 
-								local prompt = Composite[coordsXY].PickupPrompt
-								
-								PicUpOrchid(pointCoords, prompt, HerbID)
-								if prompt then
-									sleep = 100
-								end
-							end
-						end
-						--elseif isRareHerbs(HerbID) or isEggs(HerbID) then
-						local herbCfg = Config.Composites[HerbID]
-						if herbCfg and herbCfg.spawn and herbCfg.spawn.isUnique then
-							if distance <= 20.0 and not record.SoundId then
-								playSound(pointCoords)
-							elseif distance > 20.0 and record.SoundId then
-								DeleteSound(coordsXY)
-							end					
-						end
-					--если точка залутана и есть запись со звуком - удаляем звук
-					elseif record and Config.FullLootedScenarioPoint[key] then
-						DeleteSound(coordsXY)
-					end
-				end
-			end
-			--отключение звука при тп.
-			for pointCoords, record in pairs(Composite) do
-				if record.SoundId and #(playerPosition.xy - pointCoords) > 20.0 then
-					DeleteSound(pointCoords)
-				end
-			end
-			Wait(sleep)
-		else
-			Wait(1000)
-		end
+            if scenarios and #scenarios > 0 then
+                for _, scenarioData in ipairs(scenarios) do
+                    local HerbID = scenarioData.herbsScenarioPoint.HerbID
+                    local pointCoords = GetScenarioPointCoords(scenarioData.scenario, true)
+                    local coordsXY = pointCoords.xy
+                    local record = Composite[coordsXY]
+
+                    -- key (string.format) считаем только для точек, которые есть в Composite
+                    if record then
+                        local key = KeyFromCoords(coordsXY)
+
+                        if not Config.FullLootedScenarioPoint[key] then
+                            local distance = #(playerPosition.xy - coordsXY)
+
+                            if isSPHerbs(HerbID) and distance <= 2.0 then
+                                -- Если включена автоэкипировка ножа и у нас нет экипированного ножа - экипируем
+                                -- (пока нет ножа, у некоторых орхидей нет промпта)
+                                equipKnife(HerbID)
+
+                                if record.PickupPrompt then
+                                    activeOrchid = { pointCoords = pointCoords, HerbID = HerbID }
+                                    foundOrchid = true
+                                end
+                            end
+
+                            local herbCfg = Config.Composites[HerbID]
+                            if herbCfg and herbCfg.spawn and herbCfg.spawn.isUnique then
+                                if distance <= 20.0 and not record.SoundId then
+                                    playSound(pointCoords)
+                                elseif distance > 20.0 and record.SoundId then
+                                    DeleteSound(coordsXY)
+                                end
+                            end
+                        else
+                            -- точка залутана и есть запись со звуком - удаляем звук
+                            DeleteSound(coordsXY)
+                        end
+                    end
+                end
+            end
+
+            -- Рядом нет орхидеи с промптом - быстрый поток уйдёт в сон
+            if not foundOrchid then activeOrchid = nil end
+
+            -- отключение звука при тп.
+            for pointCoords, record in pairs(Composite) do
+                if record.SoundId and #(playerPosition.xy - pointCoords) > 20.0 then
+                    DeleteSound(pointCoords)
+                end
+            end
+        else
+            activeOrchid = nil            
+        end
+		Wait(1000)
     end
 end)
- 
+
+-- Быстрый поток: только ловит завершение hold-режима промпта.
+-- Когда орхидей рядом нет - спит по 500 мс и почти ничего не стоит.
+CreateThread(function()
+    while true do
+        local orchid = activeOrchid
+        if orchid and not isPickUp then
+            local rec = Composite[orchid.pointCoords.xy]
+            local prompt = rec and rec.PickupPrompt
+
+            -- activeOrchid мог устареть за секунду: игрок отошёл/телепортировался
+            -- или точка была залутана. Проверяем актуальное состояние.
+            local stillValid = prompt
+                and not Config.FullLootedScenarioPoint[orchid.key]
+                and #(GetEntityCoords(PlayerPedId()).xy - orchid.pointCoords.xy) <= 2.0
+
+            if stillValid then
+                PicUpOrchid(orchid.pointCoords, prompt, orchid.HerbID)
+            elseif activeOrchid == orchid then
+                -- запись устарела - сбрасываем, чтобы поток ушёл в сон
+                activeOrchid = nil
+            end
+            Wait(100)
+        else
+            Wait(1000)
+        end
+    end
+end)
+
 function PromptsSetGroup(PickupPrompt, group_Promt)
 	if PickupPrompt and PromptIsValid(PickupPrompt) then
 		PromptSetEnabled(PickupPrompt, true)
@@ -737,13 +776,15 @@ function PicUpOrchid(pointCoords, pickupPrompt, HerbID)
 			--удаляем prompt
 			DeletePromptAndGroup(pointCoords.xy)
 			
+			-- Орлиный глаз отключаем один раз на старте сбора, а не каждый кадр.
+			local playerId = PlayerId()
+			Citizen.InvokeNative(0x64FF4BF9AF59E139, playerId, true) -- _SECONDARY_SPECIAL_ABILITY_SET_DISABLED
+			Citizen.InvokeNative(0xC0B21F235C02139C, playerId) -- _SPECIAL_ABILITY_SET_EAGLE_EYE_DISABLED
+			
+			-- Каждый кадр остаётся только блокировка клавиш (DisableControlAction
+			-- действует один кадр, поэтому вызывать её нужно с Wait(0)).
 			CreateThread(function()
 				while picking do
-					local ped = PlayerId()
-					-- Отключаем орлиный глаз (может быть и не нужно, если уже отключено выше)
-					Citizen.InvokeNative(0x64FF4BF9AF59E139, ped, true) -- _SECONDARY_SPECIAL_ABILITY_SET_DISABLED
-					Citizen.InvokeNative(0xC0B21F235C02139C, ped) -- _SPECIAL_ABILITY_SET_EAGLE_EYE_DISABLED
-
 					DisableControlAction(0, `INPUT_SECONDARY_SPECIAL_ABILITY_SECONDARY`, true)
 					DisableControlAction(0, `INPUT_SPECIAL_ABILITY`, true)
 					-- После возобновления сначала проверяется picking: завершённый сбор
