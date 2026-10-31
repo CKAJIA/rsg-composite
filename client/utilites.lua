@@ -487,6 +487,8 @@ function CreateComposite(index, compositeHash, herbCoords, Heading, HerbID, poin
 			tostring(compositeId), tostring(HerbID), tostring(compositeHash),
 			tostring(spawnCompositeNum), tostring(MAX_SPAWN_COMPOSITE),
 			herbCoords[index].x, herbCoords[index].y, herbCoords[index].z))
+			
+		NativeDeleteComposite(compositeId)
 		return
 	end
 	if Composite[pointCoords.xy] ~= record then
@@ -674,7 +676,7 @@ CreateThread(function()
                                 equipKnife(HerbID)
 
                                 if record.PickupPrompt then
-                                    ctiveOrchid = { pointCoords = pointCoords, HerbID = HerbID, key = key }
+                                    activeOrchid = { pointCoords = pointCoords, HerbID = HerbID, key = key }
                                     foundOrchid = true
                                 end
                             end
@@ -716,7 +718,7 @@ end)
 CreateThread(function()
     while true do
         local orchid = activeOrchid
-        if orchid and not isPickUp then
+        if orchid and playerSpawn and not isPickUp then
             local rec = Composite[orchid.pointCoords.xy]
             local prompt = rec and rec.PickupPrompt
 
