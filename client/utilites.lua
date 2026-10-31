@@ -1541,6 +1541,19 @@ end
 function NativeDeleteComposite(compositeId)
     Citizen.InvokeNative(0x5758B1EE0C3FD4AC, compositeId, false)
 end
+
+-- Сбрасываем только собранные точки, оставляя созданные объекты и действия игрока.
+function ResetCollectedPoints()
+	for key, scenario in pairs(Config.FullLootedScenarioPoint) do
+		local scenarioId = tonumber(scenario)
+		if scenarioId and scenarioId ~= 0 and DoesScenarioPointExist(scenarioId) then
+			SetScenarioPointActive(scenarioId, true)
+		end
+ 
+		Config.FullLootedScenarioPoint[key] = nil
+	end
+	Config.FullLootedScenarioPoint = {}
+end
  
 -- Очистка композитов. Вызывается из client.lua: при RSGCore:Client:OnPlayerUnload
 -- и при onResourceStop (там же обрабатываются и остальные lifecycle-события ресурса).

@@ -22,6 +22,18 @@ local function LoadPlayerComposites()
 		startPointCheck()
 	end)
 end
+--Ивент который сбрасывает состояния при очистке по расписанию
+--чтобы вновь сгенерировались все наши таблицы
+RegisterNetEvent('rsg-composite:client:CollectibleCycleChanged', function(disabledPoints)
+    if playerSpawn then
+		-- Уже созданные объекты и текущее взаимодействие остаются на месте.
+        ResetCollectedPoints()
+		CrayfishReset()
+		TreeEggsReset()
+        Config.DisabledCollectibleScenarioPoints = disabledPoints or {}
+    end
+end)
+
  
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
 	Wait(1000)

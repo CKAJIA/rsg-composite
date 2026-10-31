@@ -345,7 +345,7 @@ end)
 local function CollectibleKey(coords)
     return string.format("%.3f:%.3f", coords.x, coords.y)
 end
-
+--[[
 local function GenerateCollectibleIndices()
 	if Config.ForceCollectibleIndices then
         return Config.ForceCollectibleIndices
@@ -355,13 +355,23 @@ local function GenerateCollectibleIndices()
         bird_eggs = math.random(0, 5),
     }
 end
-
-local function BuildDisabledCollectiblePoints(indices)
+--]]
+local function BuildDisabledCollectiblePoints()
     local coordinates = collectibleCoordinates
+	local indices
     if not coordinates then
         print('[rsg-composite] collectibleCoordinates не загружена (проверь порядок в манифесте)')
         return false
     end
+	--генерация индексов для цветов и яиц
+	if Config.ForceCollectibleIndices then
+		indices = Config.ForceCollectibleIndices
+	else
+		indices = {
+			flowers = math.random(0, 5),
+			bird_eggs = math.random(0, 5),
+		}
+	end
 
     -- Шаг 1: ключи разрешённых точек (выбранный цикл каждого предмета).
     local allowed = {}
@@ -406,11 +416,10 @@ end
 -- get plant
 RSGCore.Functions.CreateCallback('rsg-composite:server:GetPlayerComposites', function(source, cb)
     local Player = RSGCore.Functions.GetPlayer(source)
+	if not Player then return end
     local citizenid = Player.PlayerData.citizenid
 
-    local result = MySQL.query.await('SELECT pointkey FROM player_composites WHERE citizenid = @citizenid', {
-		['@citizenid'] = citizenid }
-    )
+    local result = MySQL.query.await('SELECT pointkey FROM player_composites WHERE citizenid = @citizenid', {['@citizenid'] = citizenid })
 
     local FullLootedScenarioPoint = {}
 
@@ -459,9 +468,13 @@ CreateUseableItem()
  
 -- Функция для очистки таблицы
 local function clearTableComposite()
-    MySQL.Async.execute('TRUNCATE TABLE player_composites')
-	-- Вместе с очисткой собранных точек обнуляем талицу запрета для коллекционых предметов.
-    Config.DisabledCollectibleScenarioPoints = {}
+	--MySQL.Async.execute('TRUNCATE TABLE player_composites')
+	-- Сначала завершаем очистку БД, затем публикуем новый цикл всем клиентам.
+    local ok, err = pcall(function()
+        MySQL.query.await('TRUNCATE TABLE player_composites')
+    end)
+	
+	return ok, err
 end
  
 -- Планирование очистки таблицы в 6:00 утра каждый день
@@ -482,7 +495,15 @@ local function scheduleClearing()
  
     -- Устанавливаем таймер для запуска очистки таблицы через указанное время
     SetTimeout(timeToClear * 1000, function()
-        clearTableComposite()
+		-- Сначала завершаем очистку БД, затем публикуем новый цикл всем клиентам.
+        local ok, err = clearTableComposite()
+
+        if not ok then
+            print(('[rsg-composite] Не удалось очистить player_composites: %s'):format(tostring(err)))
+        elseif BuildDisabledCollectiblePoints() then
+            TriggerClientEvent('rsg-composite:client:CollectibleCycleChanged', -1,
+                Config.DisabledCollectibleScenarioPoints)
+        end
         
         -- Запускаем планирование очистки таблицы снова для следующего дня
         scheduleClearing()
@@ -496,7 +517,7 @@ scheduleClearing()
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     EnsureCompositesTable()
-	BuildDisabledCollectiblePoints(GenerateCollectibleIndices())
+	BuildDisabledCollectiblePoints()
 end)
 
 --При остановке ресурса- очищаем таблицу. Это специально сделано.

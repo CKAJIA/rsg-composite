@@ -111,6 +111,13 @@ local function createTreeNest(scenarioId, speciesKey, scenarioCoords)
         logTreeEgg(('egg model failed to load (%s)'):format(speciesKey))
         return false
     end
+	
+	-- Загрузка моделей может завершиться уже после смены цикла.
+    if not playerSpawn or Config.DisabledCollectibleScenarioPoints[KeyFromCoords(scenarioCoords)] then
+        SetModelAsNoLongerNeeded(nestModel)
+        SetModelAsNoLongerNeeded(eggModel)
+        return false
+    end
 
     -- The original net_bird_egg_* scripts create the nest at the scenario point.
     -- They do not apply scenario heading to the nest prop.
