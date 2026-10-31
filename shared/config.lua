@@ -1,7 +1,13 @@
 Config = Config or {}
-Config.FullLootedScenarioPoint = {}
+Config.FullLootedScenarioPoint = {}	-- заполняется на сервере, клиент получает при запросе
 Config.DisabledCollectibleScenarioPoints = {} -- заполняется на сервере, клиент получает при запросе
 Config.Debug = false
+
+-- Ежедневный сброс собранных точек и выбор новых индексов по местному времени сервера.
+-- hour: 0–23, minute: 0–59. Например, { hour = 4, minute = 30 } — в 04:30.
+-- После изменения перезапустите ресурс, чтобы применить новое время.
+Config.DailyReset = { hour = 6, minute = 0 } -- 06:00
+
 --Каждый раз при сборе при nil будет генерироваться таблица для спавна коллекционный цветов и яиц в разных местах
 --Для цветов и яиц генерируются разные таблицы
 Config.ForceCollectibleIndices = nil

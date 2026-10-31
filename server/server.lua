@@ -479,19 +479,25 @@ end
  
 -- Планирование очистки таблицы в 6:00 утра каждый день
 local function scheduleClearing()
-    -- Получаем текущее время
-    local currentTime = os.date("*t")
-    
-    -- Задаем время очистки (6:00 утра)
-    local targetTime = os.time({year = currentTime.year, month = currentTime.month, day = currentTime.day, hour = 6, min = 0, sec = 0})
- 
-    -- Если текущее время больше или равно 6:00 утра, добавляем 24 часа к времени очистки
-    if os.time() >= targetTime then
-        targetTime = targetTime + 24 * 3600
-    end
- 
-    -- Вычисляем разницу времени между текущим временем и временем очистки
-    local timeToClear = targetTime - os.time()
+	local reset = Config.DailyReset
+	local hour = type(reset) == 'table' and reset.hour or nil
+	local minute = type(reset) == 'table' and reset.minute or nil
+	if type(hour) ~= 'number' or hour % 1 ~= 0 or hour < 0 or hour > 23
+		or type(minute) ~= 'number' or minute % 1 ~= 0 or minute < 0 or minute > 59 then
+			print('[rsg-composite] Неверное Config.DailyReset: используется 06:00')
+			hour, minute = 6, 0
+	end
+	
+	local now = os.time()
+	local currentTime = os.date('*t', now)
+	local targetTime = os.time({year = currentTime.year, month = currentTime.month,
+		day = currentTime.day, hour = hour, min = minute, sec = 0})
+	if now >= targetTime then
+		targetTime = os.time({year = currentTime.year, month = currentTime.month,
+			day = currentTime.day + 1, hour = hour, min = minute, sec = 0})
+	end
+	
+	local timeToClear = targetTime - now
  
     -- Устанавливаем таймер для запуска очистки таблицы через указанное время
     SetTimeout(timeToClear * 1000, function()
